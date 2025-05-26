@@ -11,16 +11,20 @@ import threading
 from queue import Queue
 import asyncio.subprocess
 
-class ResponseHandler:
+class LLMResponseHandler:
     def __init__(self, result_dir: Path, summary_file: Path):
         self.result_dir = result_dir
         self.summary_file = summary_file
         self.response_queues = {}
         self.handlers = {}
+        self.success_count = 0
+        self.total_count = 0
+        self.total_time = 0
         
     def start_handling(self, test_case_num: int, start_time: float):
         queue = Queue()
         self.response_queues[test_case_num] = queue
+        self.total_count += 1
         
         def handle_response():
             response_file = self.result_dir / f"tc{test_case_num:03d}.res"
@@ -36,6 +40,8 @@ class ResponseHandler:
                     elapsed_time = (time.time() - start_time) * 1000
                     with open(self.summary_file, "a", encoding="utf-8") as f:
                         f.write(f"tc{test_case_num:03d}.req,200,{elapsed_time:.2f}\n")
+                    self.success_count += 1
+                    self.total_time += elapsed_time
                     first_response = False
                 
                 if isinstance(response, dict) and "response" in response:
@@ -44,6 +50,12 @@ class ResponseHandler:
             # 전체 응답 저장
             with open(response_file, "w", encoding="utf-8") as f:
                 f.write("".join(full_response))
+            
+            # 모든 처리가 끝나면 통계 정보 추가
+            if self.total_count == self.success_count:
+                avg_time = self.total_time / self.success_count if self.success_count > 0 else 0
+                with open(self.summary_file, "a", encoding="utf-8") as f:
+                    f.write(f"\n정상건수/전체건수: {self.success_count}/{self.total_count}, 평균수행시간: {avg_time:.2f}ms\n")
         
         handler = threading.Thread(target=handle_response)
         handler.start()
@@ -60,7 +72,7 @@ class ResponseHandler:
             del self.response_queues[test_case_num]
             del self.handlers[test_case_num]
 
-class LoadTester:
+class LLMTester:
     def __init__(self, concurrent_users: int, test_cases: int):
         self.concurrent_users = concurrent_users
         self.test_cases = test_cases
@@ -70,7 +82,7 @@ class LoadTester:
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.result_dir = self.response_dir / self.timestamp
         self.summary_file = self.result_dir / "summary.txt"
-        self.response_handler = ResponseHandler(self.result_dir, self.summary_file)
+        self.response_handler = LLMResponseHandler(self.result_dir, self.summary_file)
         
     async def setup(self):
         self.result_dir.mkdir(parents=True, exist_ok=True)
@@ -128,12 +140,12 @@ class LoadTester:
             await asyncio.gather(*tasks)
 
 async def main():
-    parser = argparse.ArgumentParser(description="Load Testing Tool")
+    parser = argparse.ArgumentParser(description="LLM Load Testing Tool")
     parser.add_argument("concurrent_users", type=int, help="Number of concurrent users")
     parser.add_argument("test_cases", type=int, help="Number of test cases to run")
     
     args = parser.parse_args()
-    tester = LoadTester(args.concurrent_users, args.test_cases)
+    tester = LLMTester(args.concurrent_users, args.test_cases)
     await tester.run_test()
 
 if __name__ == "__main__":
