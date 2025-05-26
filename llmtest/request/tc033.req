@@ -1,0 +1,52 @@
+다음 Java 클래스에 대한 성능 테스트를 작성해주세요:
+
+```java
+public class DataProcessor {
+    private final Cache<String, Object> cache;
+    private final DatabaseService databaseService;
+    private final Logger logger;
+    
+    public DataProcessor(Cache<String, Object> cache,
+                        DatabaseService databaseService,
+                        Logger logger) {
+        this.cache = cache;
+        this.databaseService = databaseService;
+        this.logger = logger;
+    }
+    
+    public Object processData(String key, DataRequest request) {
+        // 캐시 확인
+        Object cachedResult = cache.get(key);
+        if (cachedResult != null) {
+            logger.info("Cache hit for key: " + key);
+            return cachedResult;
+        }
+        
+        // 데이터베이스에서 데이터 조회
+        Object result = databaseService.query(request);
+        
+        // 결과 캐싱
+        cache.put(key, result);
+        logger.info("Data processed and cached for key: " + key);
+        
+        return result;
+    }
+    
+    public void batchProcess(List<DataRequest> requests) {
+        for (DataRequest request : requests) {
+            try {
+                processData(request.getKey(), request);
+            } catch (Exception e) {
+                logger.error("Error processing request: " + request.getKey(), e);
+            }
+        }
+    }
+}
+```
+
+다음 사항들을 포함하여 테스트를 작성해주세요:
+1. 단일 요청 처리 성능 테스트
+2. 배치 처리 성능 테스트
+3. 캐시 히트/미스 시나리오 테스트
+4. 동시성 처리 성능 테스트
+5. 메모리 사용량 모니터링 테스트 

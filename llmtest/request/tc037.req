@@ -1,0 +1,64 @@
+다음 Java 클래스에 대한 예외 처리 테스트를 작성해주세요:
+
+```java
+public class DataValidator {
+    private static final String EMAIL_PATTERN = "^[A-Za-z0-9+_.-]+@(.+)$";
+    private static final String PHONE_PATTERN = "^\\+?[1-9]\\d{1,14}$";
+    
+    public void validateUserData(UserData userData) throws ValidationException {
+        List<String> errors = new ArrayList<>();
+        
+        if (userData == null) {
+            throw new ValidationException("User data cannot be null");
+        }
+        
+        if (!isValidEmail(userData.getEmail())) {
+            errors.add("Invalid email format");
+        }
+        
+        if (!isValidPhone(userData.getPhone())) {
+            errors.add("Invalid phone number format");
+        }
+        
+        if (!isValidAge(userData.getAge())) {
+            errors.add("Age must be between 0 and 150");
+        }
+        
+        if (!isValidPassword(userData.getPassword())) {
+            errors.add("Password must be at least 8 characters long and contain uppercase, lowercase, and numbers");
+        }
+        
+        if (!errors.isEmpty()) {
+            throw new ValidationException("Validation failed: " + String.join(", ", errors));
+        }
+    }
+    
+    private boolean isValidEmail(String email) {
+        return email != null && email.matches(EMAIL_PATTERN);
+    }
+    
+    private boolean isValidPhone(String phone) {
+        return phone != null && phone.matches(PHONE_PATTERN);
+    }
+    
+    private boolean isValidAge(int age) {
+        return age >= 0 && age <= 150;
+    }
+    
+    private boolean isValidPassword(String password) {
+        if (password == null || password.length() < 8) {
+            return false;
+        }
+        return password.matches(".*[A-Z].*") && 
+               password.matches(".*[a-z].*") && 
+               password.matches(".*\\d.*");
+    }
+}
+```
+
+다음 사항들을 포함하여 테스트를 작성해주세요:
+1. 기본 유효성 검사 테스트
+2. 경계값 테스트
+3. 예외 메시지 검증 테스트
+4. 다중 오류 처리 테스트
+5. null 값 처리 테스트 

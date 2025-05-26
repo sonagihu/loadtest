@@ -1,0 +1,64 @@
+다음 Java 클래스에 대한 통합 테스트를 작성해주세요:
+
+```java
+public class UserService {
+    private final UserRepository userRepository;
+    private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
+    
+    public UserService(UserRepository userRepository, 
+                      EmailService emailService,
+                      PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.emailService = emailService;
+        this.passwordEncoder = passwordEncoder;
+    }
+    
+    public User registerUser(String username, String email, String password) {
+        if (userRepository.findByUsername(username) != null) {
+            throw new UserAlreadyExistsException("Username already exists");
+        }
+        
+        if (userRepository.findByEmail(email) != null) {
+            throw new UserAlreadyExistsException("Email already exists");
+        }
+        
+        String encodedPassword = passwordEncoder.encode(password);
+        User user = new User(username, email, encodedPassword);
+        userRepository.save(user);
+        
+        emailService.sendWelcomeEmail(email);
+        return user;
+    }
+    
+    public User login(String username, String password) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new UserNotFoundException("User not found");
+        }
+        
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new InvalidPasswordException("Invalid password");
+        }
+        
+        return user;
+    }
+    
+    public void updateUserProfile(String username, UserProfile profile) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new UserNotFoundException("User not found");
+        }
+        
+        user.setProfile(profile);
+        userRepository.save(user);
+    }
+}
+```
+
+다음 사항들을 포함하여 테스트를 작성해주세요:
+1. 사용자 등록 시나리오 테스트
+2. 로그인 시나리오 테스트
+3. 프로필 업데이트 시나리오 테스트
+4. 예외 처리 시나리오 테스트
+5. 의존성 컴포넌트와의 상호작용 테스트 

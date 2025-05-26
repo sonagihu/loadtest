@@ -1,0 +1,76 @@
+/**
+ * 이 클래스는 스레드 풀을 관리하는 데 사용됩니다.
+ * 스레드 풀을 사용하여 작업을 병렬로 실행할 수 있습니다.
+ */
+public class ThreadPoolManager {
+    private final ExecutorService executorService;
+    private final int corePoolSize;
+    private final int maxPoolSize;
+    private final long keepAliveTime;
+    
+    /**
+     * 스레드 풀 매니저를 생성합니다.
+     *
+     * @param corePoolSize 스레드 풀의 기본 스레드 수
+     * @param maxPoolSize 스레드 풀의 최대 스레드 수
+     * @param keepAliveTime 스레드가 유휴 상태로 유지될 수 있는 최대 시간
+     */
+    public ThreadPoolManager(int corePoolSize, int maxPoolSize, long keepAliveTime) {
+        this.corePoolSize = corePoolSize;
+        this.maxPoolSize = maxPoolSize;
+        this.keepAliveTime = keepAliveTime;
+        this.executorService = new ThreadPoolExecutor(
+            corePoolSize,
+            maxPoolSize,
+            keepAliveTime,
+            TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(),
+            new ThreadPoolExecutor.CallerRunsPolicy()
+        );
+    }
+    
+    /**
+     * 작업을 스레드 풀에 제출합니다.
+     *
+     * @param task 실행할 작업
+     * @return 작업의 결과를 나타내는 Future
+     */
+    public Future<?> submit(Runnable task) {
+        return executorService.submit(task);
+    }
+    
+    /**
+     * 작업을 스레드 풀에 제출합니다.
+     *
+     * @param task 실행할 작업
+     * @return 작업의 결과를 나타내는 Future
+     */
+    public <T> Future<T> submit(Callable<T> task) {
+        return executorService.submit(task);
+    }
+    
+    /**
+     * 스레드 풀을 종료합니다.
+     */
+    public void shutdown() {
+        executorService.shutdown();
+    }
+    
+    /**
+     * 스레드 풀을 즉시 종료합니다.
+     *
+     * @return 종료되지 않은 작업 목록
+     */
+    public List<Runnable> shutdownNow() {
+        return executorService.shutdownNow();
+    }
+    
+    /**
+     * 스레드 풀이 종료되었는지 확인합니다.
+     *
+     * @return 스레드 풀이 종료되었으면 true, 아니면 false
+     */
+    public boolean isShutdown() {
+        return executorService.isShutdown();
+    }
+} 

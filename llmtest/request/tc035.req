@@ -1,0 +1,58 @@
+다음 Java 클래스에 대한 동시성 테스트를 작성해주세요:
+
+```java
+public class ConcurrentQueue {
+    private final Queue<Task> queue;
+    private final int maxSize;
+    private final Object lock = new Object();
+    
+    public ConcurrentQueue(int maxSize) {
+        this.queue = new LinkedList<>();
+        this.maxSize = maxSize;
+    }
+    
+    public void enqueue(Task task) throws QueueFullException {
+        synchronized (lock) {
+            if (queue.size() >= maxSize) {
+                throw new QueueFullException("Queue is full");
+            }
+            queue.offer(task);
+            lock.notify();
+        }
+    }
+    
+    public Task dequeue() throws InterruptedException {
+        synchronized (lock) {
+            while (queue.isEmpty()) {
+                lock.wait();
+            }
+            return queue.poll();
+        }
+    }
+    
+    public int size() {
+        synchronized (lock) {
+            return queue.size();
+        }
+    }
+    
+    public void clear() {
+        synchronized (lock) {
+            queue.clear();
+        }
+    }
+    
+    public boolean isEmpty() {
+        synchronized (lock) {
+            return queue.isEmpty();
+        }
+    }
+}
+```
+
+다음 사항들을 포함하여 테스트를 작성해주세요:
+1. 다중 스레드 동시 접근 테스트
+2. 생산자-소비자 패턴 테스트
+3. 데드락 방지 테스트
+4. 큐 크기 제한 테스트
+5. 동기화 메커니즘 테스트 

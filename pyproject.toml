@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "loadtest"
+version = "0.1.0"
+description = "RAG 기반 LLM, API Server, Embedding Database 성능 테스트 툴"
+authors = ["JT"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115.12"
+uvicorn = "^0.34.2"
+httpx = "^0.28.1"
+pandas = "^2.2.3"
+numpy = "^2.2.6"
+matplotlib = "^3.10.3"
+seaborn = "^0.13.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

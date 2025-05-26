@@ -1,0 +1,58 @@
+다음 Java 코드를 리팩토링해주세요:
+
+```java
+public class PaymentProcessor {
+    public void processPayment(Payment payment) {
+        if (payment == null) {
+            throw new IllegalArgumentException("Payment cannot be null");
+        }
+        
+        // 결제 수단 확인
+        if (payment.getPaymentMethod().equals("CREDIT_CARD")) {
+            processCreditCardPayment(payment);
+        } else if (payment.getPaymentMethod().equals("BANK_TRANSFER")) {
+            processBankTransfer(payment);
+        } else if (payment.getPaymentMethod().equals("PAYPAL")) {
+            processPayPalPayment(payment);
+        }
+        
+        // 결제 내역 저장
+        savePaymentRecord(payment);
+        
+        // 영수증 발송
+        sendReceipt(payment);
+    }
+    
+    private void processCreditCardPayment(Payment payment) {
+        // 신용카드 결제 처리
+        System.out.println("Processing credit card payment: " + payment.getAmount());
+    }
+    
+    private void processBankTransfer(Payment payment) {
+        // 계좌이체 처리
+        System.out.println("Processing bank transfer: " + payment.getAmount());
+    }
+    
+    private void processPayPalPayment(Payment payment) {
+        // PayPal 결제 처리
+        System.out.println("Processing PayPal payment: " + payment.getAmount());
+    }
+    
+    private void savePaymentRecord(Payment payment) {
+        // 결제 내역 저장
+        System.out.println("Saving payment record");
+    }
+    
+    private void sendReceipt(Payment payment) {
+        // 영수증 발송
+        System.out.println("Sending receipt");
+    }
+}
+```
+
+다음 원칙들을 적용하여 리팩토링해주세요:
+1. 전략 패턴 적용
+2. 단일 책임 원칙 (SRP)
+3. 개방-폐쇄 원칙 (OCP)
+4. 의존성 주입 (DI)
+5. 예외 처리 개선 

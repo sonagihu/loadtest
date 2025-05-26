@@ -1,0 +1,53 @@
+다음 Java 코드를 리팩토링해주세요:
+
+```java
+public class NotificationService {
+    private List<Notification> notifications = new ArrayList<>();
+    
+    public void sendNotification(String userId, String message, String type) {
+        if (userId == null || message == null || type == null) {
+            throw new IllegalArgumentException("Parameters cannot be null");
+        }
+        
+        Notification notification = new Notification();
+        notification.setUserId(userId);
+        notification.setMessage(message);
+        notification.setType(type);
+        notification.setTimestamp(new Date());
+        
+        // 알림 저장
+        notifications.add(notification);
+        
+        // 알림 전송
+        if (type.equals("EMAIL")) {
+            sendEmail(userId, message);
+        } else if (type.equals("SMS")) {
+            sendSMS(userId, message);
+        } else if (type.equals("PUSH")) {
+            sendPushNotification(userId, message);
+        }
+    }
+    
+    private void sendEmail(String userId, String message) {
+        // 이메일 발송 로직
+        System.out.println("Sending email to " + userId + ": " + message);
+    }
+    
+    private void sendSMS(String userId, String message) {
+        // SMS 발송 로직
+        System.out.println("Sending SMS to " + userId + ": " + message);
+    }
+    
+    private void sendPushNotification(String userId, String message) {
+        // 푸시 알림 발송 로직
+        System.out.println("Sending push notification to " + userId + ": " + message);
+    }
+}
+```
+
+다음 원칙들을 적용하여 리팩토링해주세요:
+1. 전략 패턴 적용
+2. 의존성 주입 (DI)
+3. 인터페이스 분리
+4. 예외 처리 개선
+5. 테스트 용이성 향상 

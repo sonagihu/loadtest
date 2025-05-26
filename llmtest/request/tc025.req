@@ -1,0 +1,50 @@
+다음 Java 코드의 버그를 찾아 수정해주세요:
+
+```java
+public class ConnectionPool {
+    private static final int MAX_POOL_SIZE = 10;
+    private static final int TIMEOUT = 5000;
+    
+    private List<Connection> availableConnections = new ArrayList<>();
+    private List<Connection> usedConnections = new ArrayList<>();
+    
+    public Connection getConnection() throws SQLException {
+        if (availableConnections.isEmpty()) {
+            if (usedConnections.size() < MAX_POOL_SIZE) {
+                Connection conn = createNewConnection();
+                usedConnections.add(conn);
+                return conn;
+            } else {
+                throw new SQLException("No available connections");
+            }
+        }
+        
+        Connection conn = availableConnections.remove(0);
+        if (isConnectionValid(conn)) {
+            usedConnections.add(conn);
+            return conn;
+        } else {
+            conn.close();
+            return getConnection();
+        }
+    }
+    
+    public void releaseConnection(Connection conn) {
+        if (conn != null && usedConnections.remove(conn)) {
+            availableConnections.add(conn);
+        }
+    }
+    
+    private Connection createNewConnection() throws SQLException {
+        // 실제 구현에서는 데이터베이스 연결 생성
+        return null;
+    }
+    
+    private boolean isConnectionValid(Connection conn) {
+        try {
+            return conn != null && !conn.isClosed();
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+} 

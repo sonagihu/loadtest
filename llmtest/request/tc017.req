@@ -1,0 +1,69 @@
+/**
+ * 이 클래스는 캐시 관리를 위한 클래스입니다.
+ * 
+ * @param <K> 캐시의 키 타입
+ * @param <V> 캐시의 값 타입
+ */
+public class CacheManager<K, V> {
+    private final Map<K, V> cache;
+    private final int maxSize;
+    
+    /**
+     * 캐시 관리자를 생성합니다.
+     * 
+     * @param maxSize 최대 캐시 크기
+     */
+    public CacheManager(int maxSize) {
+        this.maxSize = maxSize;
+        this.cache = new LinkedHashMap<>(maxSize, 0.75f, true);
+    }
+    
+    /**
+     * 캐시에 값을 추가합니다.
+     * 
+     * @param key 캐시의 키
+     * @param value 캐시의 값
+     */
+    public void put(K key, V value) {
+        if (cache.size() >= maxSize) {
+            K oldestKey = cache.keySet().iterator().next();
+            cache.remove(oldestKey);
+        }
+        cache.put(key, value);
+    }
+    
+    /**
+     * 캐시에서 값을 가져옵니다.
+     * 
+     * @param key 캐시의 키
+     * @return 캐시의 값
+     */
+    public V get(K key) {
+        return cache.get(key);
+    }
+    
+    /**
+     * 캐시에서 값을 제거합니다.
+     * 
+     * @param key 캐시의 키
+     */
+    public void remove(K key) {
+        cache.remove(key);
+    }
+    
+    /**
+     * 캐시를 모두 제거합니다.
+     */
+    public void clear() {
+        cache.clear();
+    }
+    
+    /**
+     * 캐시의 크기를 반환합니다.
+     * 
+     * @return 캐시의 크기
+     */
+    public int size() {
+        return cache.size();
+    }
+} 

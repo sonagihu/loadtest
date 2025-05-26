@@ -1,0 +1,57 @@
+다음 Java 코드를 리팩토링해주세요:
+
+```java
+public class OrderProcessor {
+    private List<Order> orders = new ArrayList<>();
+    
+    public void processOrder(Order order) {
+        if (order == null) {
+            throw new IllegalArgumentException("Order cannot be null");
+        }
+        
+        if (order.getItems() == null || order.getItems().isEmpty()) {
+            throw new IllegalArgumentException("Order must contain at least one item");
+        }
+        
+        if (order.getCustomer() == null) {
+            throw new IllegalArgumentException("Order must have a customer");
+        }
+        
+        if (order.getTotalAmount() <= 0) {
+            throw new IllegalArgumentException("Order total amount must be greater than 0");
+        }
+        
+        // 주문 처리 로직
+        orders.add(order);
+        
+        // 재고 확인
+        for (Item item : order.getItems()) {
+            if (item.getStock() < item.getQuantity()) {
+                throw new IllegalStateException("Insufficient stock for item: " + item.getName());
+            }
+        }
+        
+        // 재고 업데이트
+        for (Item item : order.getItems()) {
+            item.setStock(item.getStock() - item.getQuantity());
+        }
+        
+        // 주문 상태 업데이트
+        order.setStatus(OrderStatus.PROCESSING);
+        
+        // 이메일 발송
+        sendOrderConfirmationEmail(order);
+    }
+    
+    private void sendOrderConfirmationEmail(Order order) {
+        // 이메일 발송 로직
+    }
+}
+```
+
+다음 원칙들을 적용하여 리팩토링해주세요:
+1. 단일 책임 원칙 (SRP)
+2. 개방-폐쇄 원칙 (OCP)
+3. 의존성 주입 (DI)
+4. 예외 처리 개선
+5. 비즈니스 로직 분리 

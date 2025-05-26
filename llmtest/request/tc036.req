@@ -1,0 +1,59 @@
+다음 Java 클래스에 대한 메모리 누수 테스트를 작성해주세요:
+
+```java
+public class ResourceManager {
+    private final Map<String, Resource> resources;
+    private final List<ResourceListener> listeners;
+    
+    public ResourceManager() {
+        this.resources = new HashMap<>();
+        this.listeners = new ArrayList<>();
+    }
+    
+    public void addResource(String id, Resource resource) {
+        resources.put(id, resource);
+        notifyListeners("Resource added: " + id);
+    }
+    
+    public Resource getResource(String id) {
+        return resources.get(id);
+    }
+    
+    public void removeResource(String id) {
+        Resource resource = resources.remove(id);
+        if (resource != null) {
+            resource.close();
+            notifyListeners("Resource removed: " + id);
+        }
+    }
+    
+    public void addListener(ResourceListener listener) {
+        listeners.add(listener);
+    }
+    
+    public void removeListener(ResourceListener listener) {
+        listeners.remove(listener);
+    }
+    
+    private void notifyListeners(String message) {
+        for (ResourceListener listener : listeners) {
+            listener.onResourceEvent(message);
+        }
+    }
+    
+    public void clear() {
+        for (Resource resource : resources.values()) {
+            resource.close();
+        }
+        resources.clear();
+        listeners.clear();
+    }
+}
+```
+
+다음 사항들을 포함하여 테스트를 작성해주세요:
+1. 리소스 해제 테스트
+2. 리스너 메모리 누수 테스트
+3. 대용량 리소스 처리 테스트
+4. 장기 실행 테스트
+5. GC 동작 테스트 

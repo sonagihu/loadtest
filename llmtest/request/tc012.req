@@ -1,0 +1,74 @@
+다음 Java 코드를 리팩토링해주세요:
+
+```java
+public class UserManager {
+    private List<User> users = new ArrayList<>();
+    private DatabaseConnection dbConnection;
+    
+    public UserManager() {
+        this.dbConnection = new DatabaseConnection();
+    }
+    
+    public void addUser(User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("User cannot be null");
+        }
+        
+        // 이메일 중복 체크
+        for (User existingUser : users) {
+            if (existingUser.getEmail().equals(user.getEmail())) {
+                throw new IllegalStateException("Email already exists");
+            }
+        }
+        
+        // 비밀번호 암호화
+        String encryptedPassword = encryptPassword(user.getPassword());
+        user.setPassword(encryptedPassword);
+        
+        // DB에 저장
+        dbConnection.execute("INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
+            user.getName(), user.getEmail(), user.getPassword());
+        
+        users.add(user);
+    }
+    
+    public User getUser(String email) {
+        for (User user : users) {
+            if (user.getEmail().equals(email)) {
+                return user;
+            }
+        }
+        return null;
+    }
+    
+    public void updateUser(User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("User cannot be null");
+        }
+        
+        // DB 업데이트
+        dbConnection.execute("UPDATE users SET name = ?, password = ? WHERE email = ?",
+            user.getName(), user.getPassword(), user.getEmail());
+        
+        // 메모리 업데이트
+        for (int i = 0; i < users.size(); i++) {
+            if (users.get(i).getEmail().equals(user.getEmail())) {
+                users.set(i, user);
+                break;
+            }
+        }
+    }
+    
+    private String encryptPassword(String password) {
+        // 간단한 암호화 로직
+        return Base64.getEncoder().encodeToString(password.getBytes());
+    }
+}
+```
+
+다음 원칙들을 적용하여 리팩토링해주세요:
+1. 의존성 주입 (DI)
+2. 인터페이스 분리
+3. 데이터 접근 계층 분리
+4. 보안 강화
+5. 예외 처리 개선 

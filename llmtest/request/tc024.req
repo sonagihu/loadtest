@@ -1,0 +1,42 @@
+다음 Java 코드의 버그를 찾아 수정해주세요:
+
+```java
+public class FileWatcher {
+    private Map<String, Long> fileTimestamps = new HashMap<>();
+    private List<FileChangeListener> listeners = new ArrayList<>();
+    
+    public void watchFile(String filePath) {
+        File file = new File(filePath);
+        if (!file.exists()) {
+            throw new IllegalArgumentException("File does not exist: " + filePath);
+        }
+        
+        fileTimestamps.put(filePath, file.lastModified());
+    }
+    
+    public void addListener(FileChangeListener listener) {
+        if (listener == null) {
+            throw new IllegalArgumentException("Listener cannot be null");
+        }
+        listeners.add(listener);
+    }
+    
+    public void checkForChanges() {
+        for (Map.Entry<String, Long> entry : fileTimestamps.entrySet()) {
+            String filePath = entry.getKey();
+            long lastModified = entry.getValue();
+            
+            File file = new File(filePath);
+            if (file.exists() && file.lastModified() > lastModified) {
+                fileTimestamps.put(filePath, file.lastModified());
+                notifyListeners(filePath);
+            }
+        }
+    }
+    
+    private void notifyListeners(String filePath) {
+        for (FileChangeListener listener : listeners) {
+            listener.onFileChanged(filePath);
+        }
+    }
+} 

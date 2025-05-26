@@ -1,0 +1,52 @@
+다음 Java 클래스에 대한 로깅 테스트를 작성해주세요:
+
+```java
+public class LoggingService {
+    private final Logger logger;
+    private final LogFormatter formatter;
+    private final LogStorage storage;
+    
+    public LoggingService(Logger logger, LogFormatter formatter, LogStorage storage) {
+        this.logger = logger;
+        this.formatter = formatter;
+        this.storage = storage;
+    }
+    
+    public void logInfo(String message, Object... args) {
+        String formattedMessage = formatter.format("INFO", message, args);
+        logger.info(formattedMessage);
+        storage.store("INFO", formattedMessage);
+    }
+    
+    public void logError(String message, Throwable error, Object... args) {
+        String formattedMessage = formatter.format("ERROR", message, args);
+        logger.error(formattedMessage, error);
+        storage.store("ERROR", formattedMessage + "\n" + error.toString());
+    }
+    
+    public void logDebug(String message, Object... args) {
+        if (logger.isDebugEnabled()) {
+            String formattedMessage = formatter.format("DEBUG", message, args);
+            logger.debug(formattedMessage);
+            storage.store("DEBUG", formattedMessage);
+        }
+    }
+    
+    public void logWarning(String message, Object... args) {
+        String formattedMessage = formatter.format("WARNING", message, args);
+        logger.warn(formattedMessage);
+        storage.store("WARNING", formattedMessage);
+    }
+    
+    public List<String> getRecentLogs(String level, int count) {
+        return storage.retrieve(level, count);
+    }
+}
+```
+
+다음 사항들을 포함하여 테스트를 작성해주세요:
+1. 로그 레벨별 테스트
+2. 로그 포맷팅 테스트
+3. 로그 저장 테스트
+4. 로그 조회 테스트
+5. 예외 상황 로깅 테스트 

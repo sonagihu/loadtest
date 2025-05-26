@@ -1,0 +1,49 @@
+다음 Java 코드의 버그를 찾아 수정해주세요:
+
+```java
+public class Cache {
+    private static final int MAX_SIZE = 1000;
+    private Map<String, Object> cache = new HashMap<>();
+    private Queue<String> accessOrder = new LinkedList<>();
+    
+    public void put(String key, Object value) {
+        if (key == null || value == null) {
+            throw new IllegalArgumentException("Key and value cannot be null");
+        }
+        
+        if (cache.size() >= MAX_SIZE) {
+            String oldestKey = accessOrder.poll();
+            cache.remove(oldestKey);
+        }
+        
+        cache.put(key, value);
+        accessOrder.add(key);
+    }
+    
+    public Object get(String key) {
+        if (key == null) {
+            throw new IllegalArgumentException("Key cannot be null");
+        }
+        
+        Object value = cache.get(key);
+        if (value != null) {
+            accessOrder.remove(key);
+            accessOrder.add(key);
+        }
+        return value;
+    }
+    
+    public void remove(String key) {
+        if (key == null) {
+            throw new IllegalArgumentException("Key cannot be null");
+        }
+        
+        cache.remove(key);
+        accessOrder.remove(key);
+    }
+    
+    public void clear() {
+        cache.clear();
+        accessOrder.clear();
+    }
+} 

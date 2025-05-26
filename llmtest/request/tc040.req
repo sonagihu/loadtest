@@ -1,0 +1,58 @@
+다음 Java 클래스에 대한 메트릭 수집 테스트를 작성해주세요:
+
+```java
+public class MetricsCollector {
+    private final Map<String, Counter> counters;
+    private final Map<String, Timer> timers;
+    private final Map<String, Gauge> gauges;
+    private final MetricsReporter reporter;
+    
+    public MetricsCollector(MetricsReporter reporter) {
+        this.counters = new ConcurrentHashMap<>();
+        this.timers = new ConcurrentHashMap<>();
+        this.gauges = new ConcurrentHashMap<>();
+        this.reporter = reporter;
+    }
+    
+    public void incrementCounter(String name) {
+        counters.computeIfAbsent(name, k -> new Counter()).increment();
+    }
+    
+    public void recordTime(String name, long timeInMillis) {
+        timers.computeIfAbsent(name, k -> new Timer()).record(timeInMillis);
+    }
+    
+    public void setGauge(String name, double value) {
+        gauges.computeIfAbsent(name, k -> new Gauge()).set(value);
+    }
+    
+    public Map<String, Long> getCounterValues() {
+        Map<String, Long> values = new HashMap<>();
+        counters.forEach((name, counter) -> values.put(name, counter.getValue()));
+        return values;
+    }
+    
+    public Map<String, TimerStats> getTimerStats() {
+        Map<String, TimerStats> stats = new HashMap<>();
+        timers.forEach((name, timer) -> stats.put(name, timer.getStats()));
+        return stats;
+    }
+    
+    public Map<String, Double> getGaugeValues() {
+        Map<String, Double> values = new HashMap<>();
+        gauges.forEach((name, gauge) -> values.put(name, gauge.getValue()));
+        return values;
+    }
+    
+    public void reportMetrics() {
+        reporter.report(getCounterValues(), getTimerStats(), getGaugeValues());
+    }
+}
+```
+
+다음 사항들을 포함하여 테스트를 작성해주세요:
+1. 카운터 증가 테스트
+2. 타이머 기록 테스트
+3. 게이지 설정 테스트
+4. 메트릭 리포트 테스트
+5. 동시성 테스트 

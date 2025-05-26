@@ -1,0 +1,50 @@
+다음 Java 코드를 리팩토링해주세요:
+
+```java
+public class ReportGenerator {
+    public String generateReport(List<Transaction> transactions) {
+        StringBuilder report = new StringBuilder();
+        
+        // 헤더 추가
+        report.append("Transaction Report\n");
+        report.append("=================\n\n");
+        
+        // 거래 내역 추가
+        for (Transaction t : transactions) {
+            report.append("Date: ").append(t.getDate()).append("\n");
+            report.append("Amount: ").append(t.getAmount()).append("\n");
+            report.append("Type: ").append(t.getType()).append("\n");
+            report.append("Description: ").append(t.getDescription()).append("\n");
+            report.append("-----------------\n");
+        }
+        
+        // 합계 계산
+        double total = 0;
+        for (Transaction t : transactions) {
+            if (t.getType().equals("INCOME")) {
+                total += t.getAmount();
+            } else {
+                total -= t.getAmount();
+            }
+        }
+        
+        report.append("\nTotal Balance: ").append(total).append("\n");
+        
+        // 파일로 저장
+        try {
+            Files.write(Paths.get("report.txt"), report.toString().getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        
+        return report.toString();
+    }
+}
+```
+
+다음 원칙들을 적용하여 리팩토링해주세요:
+1. 단일 책임 원칙 (SRP)
+2. 전략 패턴 적용
+3. 예외 처리 개선
+4. 불변성 보장
+5. 테스트 용이성 향상 

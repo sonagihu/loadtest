@@ -1,0 +1,65 @@
+다음 Java 클래스에 대한 보안 테스트를 작성해주세요:
+
+```java
+public class SecurityManager {
+    private final UserRepository userRepository;
+    private final TokenService tokenService;
+    private final PasswordEncoder passwordEncoder;
+    private final RateLimiter rateLimiter;
+    
+    public SecurityManager(UserRepository userRepository,
+                          TokenService tokenService,
+                          PasswordEncoder passwordEncoder,
+                          RateLimiter rateLimiter) {
+        this.userRepository = userRepository;
+        this.tokenService = tokenService;
+        this.passwordEncoder = passwordEncoder;
+        this.rateLimiter = rateLimiter;
+    }
+    
+    public String authenticate(String username, String password) {
+        if (!rateLimiter.tryAcquire()) {
+            throw new RateLimitExceededException("Too many login attempts");
+        }
+        
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new AuthenticationException("Invalid credentials");
+        }
+        
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new AuthenticationException("Invalid credentials");
+        }
+        
+        return tokenService.generateToken(user);
+    }
+    
+    public void validateToken(String token) {
+        if (!tokenService.validateToken(token)) {
+            throw new InvalidTokenException("Invalid or expired token");
+        }
+    }
+    
+    public void changePassword(String username, String oldPassword, String newPassword) {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new UserNotFoundException("User not found");
+        }
+        
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new AuthenticationException("Invalid current password");
+        }
+        
+        String encodedNewPassword = passwordEncoder.encode(newPassword);
+        user.setPassword(encodedNewPassword);
+        userRepository.save(user);
+    }
+}
+```
+
+다음 사항들을 포함하여 테스트를 작성해주세요:
+1. 인증 시도 제한 테스트
+2. 토큰 검증 테스트
+3. 비밀번호 변경 보안 테스트
+4. SQL 인젝션 방지 테스트
+5. XSS 공격 방지 테스트 
