@@ -57,7 +57,7 @@ class IndexedFileSearchScenario:
                 query_filter=filter_condition,
                 limit=1,
                 search_params=models.SearchParams(
-                    hnsw_ef=128,  # HNSW 인덱스 파라미터 조정
+                    hnsw_ef=50,  # HNSW 인덱스 파라미터 조정
                     exact=False   # 근사 검색 사용
                 )
             )
