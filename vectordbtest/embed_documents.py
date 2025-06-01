@@ -15,6 +15,40 @@ openai_client = OpenAI()
 # Qdrant 클라이언트 초기화
 qdrant_client = QdrantClient("localhost", port=6333)
 
+def create_collection(collection_name: str):
+    """컬렉션을 생성하고 필요한 인덱스를 설정합니다."""
+    try:
+        # 벡터 설정
+        vectors_config = models.VectorParams(
+            size=1536,  # OpenAI embedding 차원
+            distance=models.Distance.COSINE
+        )
+        
+        # 최적화 설정
+        optimizers_config = models.OptimizersConfigDiff(
+            indexing_threshold=0,  # 즉시 인덱싱
+            memmap_threshold=20000  # 메모리 매핑 임계값
+        )
+        
+        # 컬렉션 생성
+        qdrant_client.create_collection(
+            collection_name=collection_name,
+            vectors_config=vectors_config,
+            optimizers_config=optimizers_config
+        )
+        
+        # filename 필드에 대한 인덱스 생성
+        qdrant_client.create_payload_index(
+            collection_name=collection_name,
+            field_name="filename",
+            field_schema=models.PayloadFieldSchema.KEYWORD
+        )
+        
+        print(f"Created collection '{collection_name}' with filename index")
+        
+    except Exception as e:
+        print(f"Error creating collection '{collection_name}': {str(e)}")
+
 def get_embedding(text):
     """OpenAI API를 사용하여 텍스트의 임베딩을 생성합니다."""
     response = openai_client.embeddings.create(
@@ -73,12 +107,20 @@ def process_directory(directory, collection_name):
         except Exception as e:
             print(f"Error processing {file_path}: {str(e)}")
 
-# service 컬렉션에 controller와 service 디렉토리의 파일 임베딩
-process_directory("controller", "service")
-process_directory("service", "service")
+def main():
+    # 컬렉션 생성
+    create_collection("service")
+    create_collection("logic")
+    
+    # service 컬렉션에 controller와 service 디렉토리의 파일 임베딩
+    process_directory("controller", "service")
+    process_directory("service", "service")
 
-# logic 컬렉션에 bean과 dbio 디렉토리의 파일 임베딩
-process_directory("bean", "logic")
-process_directory("dbio", "logic")
+    # logic 컬렉션에 bean과 dbio 디렉토리의 파일 임베딩
+    process_directory("bean", "logic")
+    process_directory("dbio", "logic")
 
-print("모든 파일이 성공적으로 임베딩되었습니다.") 
+    print("모든 파일이 성공적으로 임베딩되었습니다.")
+
+if __name__ == "__main__":
+    main() 

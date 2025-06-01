@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import List, Dict, Any
 import argparse
 from request.req001 import FileSearchScenario
+from request.req002 import IndexedFileSearchScenario
 
 class VectorDBLoadTest:
     def __init__(self, concurrent_users: int, test_cases: int):
@@ -54,12 +55,16 @@ def run_load_test(scenario_name: str, iterations: int = 100):
     
     start_time = time.time()
     
+    # 시나리오 선택
     if scenario_name == "req001":
         scenario = FileSearchScenario()
-        results = scenario.run_scenario(iterations)
+    elif scenario_name == "req002":
+        scenario = IndexedFileSearchScenario()
     else:
         print(f"알 수 없는 시나리오: {scenario_name}")
         return
+    
+    results = scenario.run_scenario(iterations)
     
     end_time = time.time()
     total_time = end_time - start_time
@@ -124,10 +129,9 @@ def run_load_test(scenario_name: str, iterations: int = 100):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Vector DB 부하 테스트')
     parser.add_argument('--scenario', type=str, default='req001',
-                      help='실행할 시나리오 이름 (예: req001)')
+                      help='실행할 시나리오 이름 (req001 또는 req002)')
     parser.add_argument('--iterations', type=int, default=100,
                       help='반복 횟수 (기본값: 100)')
     
     args = parser.parse_args()
-    
     run_load_test(args.scenario, args.iterations) 
