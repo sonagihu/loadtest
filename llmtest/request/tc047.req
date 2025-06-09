@@ -1,0 +1,17 @@
+다음 요구사항에 맞는 상태 패턴을 구현해주세요:
+
+1. 주문 상태 관리를 위한 상태 패턴 구현이 필요합니다.
+2. 다음 클래스들이 필요합니다:
+   - OrderState (인터페이스)
+   - Order (컨텍스트)
+   - PendingState, PaidState, ShippedState, DeliveredState (구체 상태)
+3. OrderState는 다음 메소드가 필요합니다:
+   - process(Order order)
+   - cancel(Order order)
+   - getStateName()
+4. Order는 다음 기능이 필요합니다:
+   - 상태 변경
+   - 상태별 처리
+   - 상태 이력 관리
+5. 각 상태는 자신만의 비즈니스 로직을 구현해야 합니다.
+6. 예외 처리가 필요합니다. 

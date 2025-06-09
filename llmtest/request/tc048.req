@@ -1,0 +1,19 @@
+다음 요구사항에 맞는 템플릿 메소드 패턴을 구현해주세요:
+
+1. 문서 생성 시스템을 위한 템플릿 메소드 패턴 구현이 필요합니다.
+2. 다음 클래스들이 필요합니다:
+   - DocumentGenerator (추상 클래스)
+   - PDFGenerator, HTMLGenerator, WordGenerator (구체 클래스)
+3. DocumentGenerator는 다음 메소드가 필요합니다:
+   - generate() (템플릿 메소드)
+   - createHeader()
+   - createBody()
+   - createFooter()
+   - format()
+4. 각 구체 클래스는 다음 기능을 구현해야 합니다:
+   - 헤더 생성
+   - 본문 생성
+   - 푸터 생성
+   - 문서 포맷팅
+5. 공통 로직은 상위 클래스에서 처리해야 합니다.
+6. 예외 처리가 필요합니다. 

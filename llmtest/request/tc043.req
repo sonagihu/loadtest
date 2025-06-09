@@ -1,0 +1,16 @@
+다음 요구사항에 맞는 팩토리 패턴을 구현해주세요:
+
+1. 문서 변환 시스템을 위한 팩토리 패턴 구현이 필요합니다.
+2. 다음 클래스들이 필요합니다:
+   - DocumentConverter (추상 클래스)
+   - PDFConverter, WordConverter, ExcelConverter (구체 클래스)
+   - DocumentConverterFactory (팩토리 클래스)
+3. DocumentConverter는 다음 메소드가 필요합니다:
+   - convert(File input, File output)
+   - validate(File input)
+   - getSupportedFormats()
+4. DocumentConverterFactory는 다음 기능이 필요합니다:
+   - 파일 확장자에 따른 적절한 변환기 생성
+   - 지원하지 않는 형식에 대한 예외 처리
+5. 각 변환기는 자신만의 변환 로직을 구현해야 합니다.
+6. 예외 처리가 필요합니다. 

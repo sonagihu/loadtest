@@ -1,0 +1,20 @@
+다음 요구사항에 맞는 어댑터 패턴을 구현해주세요:
+
+1. 외부 결제 시스템 연동을 위한 어댑터 패턴 구현이 필요합니다.
+2. 다음 클래스들이 필요합니다:
+   - PaymentGateway (인터페이스)
+   - LegacyPaymentSystem (기존 시스템)
+   - PaymentGatewayAdapter (어댑터)
+3. PaymentGateway는 다음 메소드가 필요합니다:
+   - processPayment()
+   - refundPayment()
+   - getPaymentStatus()
+4. LegacyPaymentSystem은 다음 기능이 필요합니다:
+   - 결제 처리
+   - 환불 처리
+   - 상태 조회
+5. PaymentGatewayAdapter는 다음 기능이 필요합니다:
+   - 기존 시스템과 새 시스템 간 변환
+   - 에러 처리
+   - 로깅
+6. 예외 처리가 필요합니다. 

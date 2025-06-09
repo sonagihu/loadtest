@@ -1,0 +1,17 @@
+다음 요구사항에 맞는 데코레이터 패턴을 구현해주세요:
+
+1. 로깅 시스템을 위한 데코레이터 패턴 구현이 필요합니다.
+2. 다음 클래스들이 필요합니다:
+   - Logger (인터페이스)
+   - BasicLogger (기본 구현)
+   - TimestampLogger, ErrorLogger, PerformanceLogger (데코레이터)
+3. Logger는 다음 메소드가 필요합니다:
+   - log(String message)
+   - error(String message, Throwable e)
+   - debug(String message)
+4. 각 데코레이터는 다음 기능을 추가해야 합니다:
+   - TimestampLogger: 시간 정보 추가
+   - ErrorLogger: 에러 상세 정보 추가
+   - PerformanceLogger: 성능 측정 정보 추가
+5. 데코레이터는 체이닝이 가능해야 합니다.
+6. 로그 레벨에 따른 필터링이 필요합니다. 

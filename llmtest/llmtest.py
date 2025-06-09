@@ -20,6 +20,7 @@ class LLMResponseHandler:
         self.success_count = 0
         self.total_count = 0
         self.total_time = 0
+        self.summary_written = False
         
     def start_handling(self, test_case_num: int, start_time: float):
         queue = Queue()
@@ -35,7 +36,8 @@ class LLMResponseHandler:
                 response = queue.get()
                 if response is None:  # 종료 신호
                     break
-                    
+
+                # 첫 토큰까지의 시간 (Time To First Token, TTFT) Logging    
                 if first_response:
                     elapsed_time = (time.time() - start_time) * 1000
                     with open(self.summary_file, "a", encoding="utf-8") as f:
@@ -51,11 +53,12 @@ class LLMResponseHandler:
             with open(response_file, "w", encoding="utf-8") as f:
                 f.write("".join(full_response))
             
-            # 모든 처리가 끝나면 통계 정보 추가
-            if self.total_count == self.success_count:
+            # 모든 처리가 끝나면 통계 정보 추가 (한 번만)
+            if self.total_count == self.success_count and not self.summary_written:
                 avg_time = self.total_time / self.success_count if self.success_count > 0 else 0
                 with open(self.summary_file, "a", encoding="utf-8") as f:
                     f.write(f"\n정상건수/전체건수: {self.success_count}/{self.total_count}, 평균수행시간: {avg_time:.2f}ms\n")
+                self.summary_written = True
         
         handler = threading.Thread(target=handle_response)
         handler.start()

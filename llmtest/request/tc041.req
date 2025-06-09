@@ -1,0 +1,13 @@
+다음 요구사항에 맞는 싱글톤 패턴을 구현해주세요:
+
+1. 클래스 이름은 'DatabaseConnection'입니다.
+2. 데이터베이스 연결을 관리하는 싱글톤 클래스입니다.
+3. 다음 기능들이 필요합니다:
+   - private 생성자
+   - private static 인스턴스
+   - public static getInstance() 메소드
+   - 데이터베이스 연결 정보 (url, username, password)
+   - 연결 상태 확인 메소드
+4. 스레드 안전성을 보장해야 합니다.
+5. 지연 초기화(Lazy Initialization)를 사용해야 합니다.
+6. 예외 처리가 필요합니다. 

@@ -1,0 +1,17 @@
+다음 요구사항에 맞는 전략 패턴을 구현해주세요:
+
+1. 결제 시스템을 위한 전략 패턴 구현이 필요합니다.
+2. 다음 클래스들이 필요합니다:
+   - PaymentStrategy (인터페이스)
+   - CreditCardPayment, KakaoPayment, NaverPayment (구체 전략)
+   - PaymentProcessor (컨텍스트)
+3. PaymentStrategy는 다음 메소드가 필요합니다:
+   - processPayment(PaymentInfo paymentInfo)
+   - validatePayment(PaymentInfo paymentInfo)
+   - getPaymentType()
+4. PaymentProcessor는 다음 기능이 필요합니다:
+   - 결제 전략 설정
+   - 결제 처리
+   - 결제 결과 반환
+5. 각 결제 전략은 자신만의 결제 로직을 구현해야 합니다.
+6. 예외 처리가 필요합니다. 

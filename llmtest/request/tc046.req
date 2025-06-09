@@ -1,0 +1,21 @@
+다음 요구사항에 맞는 커맨드 패턴을 구현해주세요:
+
+1. 문서 편집기를 위한 커맨드 패턴 구현이 필요합니다.
+2. 다음 클래스들이 필요합니다:
+   - Command (인터페이스)
+   - Document (수신자)
+   - InsertCommand, DeleteCommand, FormatCommand (구체 커맨드)
+   - CommandHistory (커맨드 관리자)
+3. Command는 다음 메소드가 필요합니다:
+   - execute()
+   - undo()
+   - redo()
+4. Document는 다음 기능이 필요합니다:
+   - 텍스트 삽입
+   - 텍스트 삭제
+   - 텍스트 포맷팅
+5. CommandHistory는 다음 기능이 필요합니다:
+   - 커맨드 저장
+   - 실행 취소
+   - 다시 실행
+6. 예외 처리가 필요합니다. 
