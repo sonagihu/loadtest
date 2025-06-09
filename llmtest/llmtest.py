@@ -25,6 +25,7 @@ class LLMResponseHandler:
         self.last_token_times = {}  # test_case_num -> last_token_time
         self.token_counts = {}  # test_case_num -> token_count
         self.first_token_times = {}  # test_case_num -> first_token_time
+        self.start_times = {}  # test_case_num -> start_time
         
     def start_handling(self, test_case_num: int, start_time: float):
         queue = Queue()
@@ -33,6 +34,7 @@ class LLMResponseHandler:
         self.last_token_times[test_case_num] = start_time
         self.token_counts[test_case_num] = 0
         self.first_token_times[test_case_num] = None
+        self.start_times[test_case_num] = start_time
         
         def handle_response():
             response_file = self.result_dir / f"tc{test_case_num:03d}.res"
@@ -47,8 +49,9 @@ class LLMResponseHandler:
                 # 첫 토큰까지의 시간 (Time To First Token, TTFT) Logging    
                 if first_response:
                     elapsed_time = (time.time() - start_time) * 1000
+                    start_time_str = datetime.fromtimestamp(start_time).strftime('%H%M%S.%f')[:-4]  # HHMMSS.xx 형식
                     with open(self.summary_file, "a", encoding="utf-8") as f:
-                        f.write(f"tc{test_case_num:03d}.req,200,{elapsed_time:.2f}\n")
+                        f.write(f"tc{test_case_num:03d}.req,200,{start_time_str},{elapsed_time:.2f}\n")
                     self.success_count += 1
                     self.total_time += elapsed_time
                     first_response = False
@@ -103,7 +106,7 @@ class LLMResponseHandler:
                 with open(self.summary_file, "w", encoding="utf-8") as f:
                     for line in lines:
                         if line.startswith(f"tc{test_case_num:03d}.req"):
-                            f.write(f"tc{test_case_num:03d}.req,200,{line.split(',')[2].strip()},{elapsed_time:.2f},{self.token_counts[test_case_num]},{tbt:.2f}\n")
+                            f.write(f"tc{test_case_num:03d}.req,200,{line.split(',')[2].strip()},{line.split(',')[3].strip()},{elapsed_time:.2f},{self.token_counts[test_case_num]},{tbt:.2f}\n")
                         else:
                             f.write(line)
             
@@ -115,6 +118,8 @@ class LLMResponseHandler:
                 del self.token_counts[test_case_num]
             if test_case_num in self.first_token_times:
                 del self.first_token_times[test_case_num]
+            if test_case_num in self.start_times:
+                del self.start_times[test_case_num]
 
 class LLMTester:
     def __init__(self, concurrent_users: int, test_cases: int):
@@ -131,7 +136,7 @@ class LLMTester:
     async def setup(self):
         self.result_dir.mkdir(parents=True, exist_ok=True)
         with open(self.summary_file, "w", encoding="utf-8") as f:
-            f.write("Test Case,Response Code,TTFT (ms),Elapsed Time (ms),Total Res Tokens,Avg TBT (ms)\n")
+            f.write("Test Case,Response Code,Start Time,TTFT (ms),Elapsed Time (ms),Total Res Tokens,Avg TBT (ms)\n")
     
     async def process_test_case(self, test_case_num: int):
         test_case_file = f"tc{test_case_num:03d}.req"
