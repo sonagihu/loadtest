@@ -20,12 +20,19 @@ class LLMResponseHandler:
         self.success_count = 0
         self.total_count = 0
         self.total_time = 0
+        self.total_elapsed_time = 0
         self.summary_written = False
+        self.last_token_times = {}  # test_case_num -> last_token_time
+        self.token_counts = {}  # test_case_num -> token_count
+        self.first_token_times = {}  # test_case_num -> first_token_time
         
     def start_handling(self, test_case_num: int, start_time: float):
         queue = Queue()
         self.response_queues[test_case_num] = queue
         self.total_count += 1
+        self.last_token_times[test_case_num] = start_time
+        self.token_counts[test_case_num] = 0
+        self.first_token_times[test_case_num] = None
         
         def handle_response():
             response_file = self.result_dir / f"tc{test_case_num:03d}.res"
@@ -45,9 +52,12 @@ class LLMResponseHandler:
                     self.success_count += 1
                     self.total_time += elapsed_time
                     first_response = False
+                    self.first_token_times[test_case_num] = time.time()
                 
                 if isinstance(response, dict) and "response" in response:
                     full_response.append(response["response"])
+                    self.last_token_times[test_case_num] = time.time()
+                    self.token_counts[test_case_num] += 1
             
             # 전체 응답 저장
             with open(response_file, "w", encoding="utf-8") as f:
@@ -56,8 +66,11 @@ class LLMResponseHandler:
             # 모든 처리가 끝나면 통계 정보 추가 (한 번만)
             if self.total_count == self.success_count and not self.summary_written:
                 avg_time = self.total_time / self.success_count if self.success_count > 0 else 0
+                avg_elapsed_time = self.total_elapsed_time / self.success_count if self.success_count > 0 else 0
                 with open(self.summary_file, "a", encoding="utf-8") as f:
-                    f.write(f"\n정상건수/전체건수: {self.success_count}/{self.total_count}, 평균수행시간: {avg_time:.2f}ms\n")
+                    f.write(f"\n정상건수/전체건수: {self.success_count}/{self.total_count}\n")
+                    f.write(f"평균 TTFT: {avg_time:.2f}ms\n")
+                    f.write(f"평균 Elapsed Time: {avg_elapsed_time:.2f}ms\n")
                 self.summary_written = True
         
         handler = threading.Thread(target=handle_response)
@@ -72,8 +85,36 @@ class LLMResponseHandler:
         if test_case_num in self.response_queues:
             self.response_queues[test_case_num].put(None)
             self.handlers[test_case_num].join()
+            
+            # 마지막 토큰까지의 총 시간 계산
+            if test_case_num in self.last_token_times:
+                elapsed_time = (self.last_token_times[test_case_num] - self.handlers[test_case_num]._start_time) * 1000
+                self.total_elapsed_time += elapsed_time
+                
+                # TBT 계산
+                tbt = 0
+                if test_case_num in self.first_token_times and self.token_counts[test_case_num] > 1:
+                    tbt = (self.last_token_times[test_case_num] - self.first_token_times[test_case_num]) * 1000 / (self.token_counts[test_case_num] - 1)
+                
+                # 기존 TTFT 라인에 Elapsed Time, Total Res Tokens, Avg TBT 추가
+                with open(self.summary_file, "r", encoding="utf-8") as f:
+                    lines = f.readlines()
+                
+                with open(self.summary_file, "w", encoding="utf-8") as f:
+                    for line in lines:
+                        if line.startswith(f"tc{test_case_num:03d}.req"):
+                            f.write(f"tc{test_case_num:03d}.req,200,{line.split(',')[2].strip()},{elapsed_time:.2f},{self.token_counts[test_case_num]},{tbt:.2f}\n")
+                        else:
+                            f.write(line)
+            
             del self.response_queues[test_case_num]
             del self.handlers[test_case_num]
+            if test_case_num in self.last_token_times:
+                del self.last_token_times[test_case_num]
+            if test_case_num in self.token_counts:
+                del self.token_counts[test_case_num]
+            if test_case_num in self.first_token_times:
+                del self.first_token_times[test_case_num]
 
 class LLMTester:
     def __init__(self, concurrent_users: int, test_cases: int):
@@ -90,7 +131,7 @@ class LLMTester:
     async def setup(self):
         self.result_dir.mkdir(parents=True, exist_ok=True)
         with open(self.summary_file, "w", encoding="utf-8") as f:
-            f.write("Test Case,Response Code,Elapsed Time (ms)\n")
+            f.write("Test Case,Response Code,TTFT (ms),Elapsed Time (ms),Total Res Tokens,Avg TBT (ms)\n")
     
     async def process_test_case(self, test_case_num: int):
         test_case_file = f"tc{test_case_num:03d}.req"
