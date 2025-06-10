@@ -1,0 +1,209 @@
+기능: Performance Optimization (성능 최적화)
+길이: Long (긴 요청)
+복잡도: Basic (기본)
+
+다음 쇼핑몰 시스템의 성능을 최적화해주세요:
+
+```java
+public class Product {
+    private final String id;
+    private String name;
+    private double price;
+    private int stock;
+    private String category;
+    private String description;
+    private List<String> tags;
+    
+    public Product(String id, String name, double price, int stock, String category) {
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.stock = stock;
+        this.category = category;
+        this.tags = new ArrayList<>();
+    }
+    
+    // Getters and setters
+}
+
+public class Cart {
+    private final String id;
+    private final Map<String, CartItem> items;
+    private double totalAmount;
+    
+    public Cart(String id) {
+        this.id = id;
+        this.items = new HashMap<>();
+        this.totalAmount = 0.0;
+    }
+    
+    public void addItem(Product product, int quantity) {
+        if (product.getStock() < quantity) {
+            throw new IllegalStateException("재고가 부족합니다.");
+        }
+        
+        CartItem existingItem = items.get(product.getId());
+        if (existingItem != null) {
+            existingItem.increaseQuantity(quantity);
+        } else {
+            items.put(product.getId(), new CartItem(product, quantity));
+        }
+        
+        updateTotalAmount();
+    }
+    
+    public void removeItem(String productId) {
+        items.remove(productId);
+        updateTotalAmount();
+    }
+    
+    public void updateQuantity(String productId, int quantity) {
+        CartItem item = items.get(productId);
+        if (item != null) {
+            item.setQuantity(quantity);
+            updateTotalAmount();
+        }
+    }
+    
+    private void updateTotalAmount() {
+        totalAmount = items.values().stream()
+            .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())
+            .sum();
+    }
+    
+    // Getters
+}
+
+public class CartItem {
+    private final Product product;
+    private int quantity;
+    
+    public CartItem(Product product, int quantity) {
+        this.product = product;
+        this.quantity = quantity;
+    }
+    
+    public void increaseQuantity(int amount) {
+        this.quantity += amount;
+    }
+    
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
+    
+    // Getters
+}
+
+public class Order {
+    private final String id;
+    private final String userId;
+    private final List<OrderItem> items;
+    private OrderStatus status;
+    private final LocalDateTime orderDate;
+    private double totalAmount;
+    
+    public Order(String id, String userId) {
+        this.id = id;
+        this.userId = userId;
+        this.items = new ArrayList<>();
+        this.status = OrderStatus.PENDING;
+        this.orderDate = LocalDateTime.now();
+        this.totalAmount = 0.0;
+    }
+    
+    public void addItem(Product product, int quantity) {
+        items.add(new OrderItem(product, quantity));
+        updateTotalAmount();
+    }
+    
+    public void updateStatus(OrderStatus newStatus) {
+        this.status = newStatus;
+    }
+    
+    private void updateTotalAmount() {
+        totalAmount = items.stream()
+            .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())
+            .sum();
+    }
+    
+    // Getters
+}
+
+public class OrderItem {
+    private final Product product;
+    private final int quantity;
+    
+    public OrderItem(Product product, int quantity) {
+        this.product = product;
+        this.quantity = quantity;
+    }
+    
+    // Getters
+}
+
+public enum OrderStatus {
+    PENDING,
+    PROCESSING,
+    SHIPPED,
+    DELIVERED,
+    CANCELLED
+}
+
+public class OrderService {
+    private final Map<String, Order> orders;
+    private final Map<String, Product> products;
+    
+    public OrderService() {
+        this.orders = new HashMap<>();
+        this.products = new HashMap<>();
+    }
+    
+    public void addProduct(Product product) {
+        products.put(product.getId(), product);
+    }
+    
+    public Order createOrder(String userId) {
+        String orderId = UUID.randomUUID().toString();
+        Order order = new Order(orderId, userId);
+        orders.put(orderId, order);
+        return order;
+    }
+    
+    public void addItemToOrder(String orderId, String productId, int quantity) {
+        Order order = orders.get(orderId);
+        Product product = products.get(productId);
+        
+        if (order == null || product == null) {
+            throw new IllegalArgumentException("주문 또는 상품을 찾을 수 없습니다.");
+        }
+        
+        if (product.getStock() < quantity) {
+            throw new IllegalStateException("재고가 부족합니다.");
+        }
+        
+        order.addItem(product, quantity);
+        product.setStock(product.getStock() - quantity);
+    }
+    
+    public void updateOrderStatus(String orderId, OrderStatus status) {
+        Order order = orders.get(orderId);
+        if (order != null) {
+            order.updateStatus(status);
+        }
+    }
+    
+    public List<Order> getOrdersByUser(String userId) {
+        return orders.values().stream()
+            .filter(order -> order.getUserId().equals(userId))
+            .collect(Collectors.toList());
+    }
+    
+    public List<Order> getOrdersByStatus(OrderStatus status) {
+        return orders.values().stream()
+            .filter(order -> order.getStatus() == status)
+            .collect(Collectors.toList());
+    }
+    
+    // Getters for products and orders
+}
+``` 

@@ -1,0 +1,93 @@
+[기능] Code Documentation (코드 문서화)
+[길이] Short (짧은 요청)
+[복잡도] Intermediate (중급)
+[설명] 옵저버 패턴을 사용한 이벤트 처리 시스템의 코드 문서화
+
+다음 이벤트 처리 시스템의 코드를 문서화해줘:
+```java
+public interface EventListener {
+    void onEvent(Event event);
+}
+
+public class Event {
+    private String type;
+    private Object data;
+    private long timestamp;
+    
+    public Event(String type, Object data) {
+        this.type = type;
+        this.data = data;
+        this.timestamp = System.currentTimeMillis();
+    }
+    
+    public String getType() {
+        return type;
+    }
+    
+    public Object getData() {
+        return data;
+    }
+    
+    public long getTimestamp() {
+        return timestamp;
+    }
+}
+
+public class EventManager {
+    private final Map<String, List<EventListener>> listeners;
+    
+    public EventManager() {
+        this.listeners = new HashMap<>();
+    }
+    
+    public void addEventListener(String eventType, EventListener listener) {
+        listeners.computeIfAbsent(eventType, k -> new ArrayList<>()).add(listener);
+    }
+    
+    public void removeEventListener(String eventType, EventListener listener) {
+        List<EventListener> eventListeners = listeners.get(eventType);
+        if (eventListeners != null) {
+            eventListeners.remove(listener);
+        }
+    }
+    
+    public void notifyListeners(Event event) {
+        List<EventListener> eventListeners = listeners.get(event.getType());
+        if (eventListeners != null) {
+            for (EventListener listener : eventListeners) {
+                listener.onEvent(event);
+            }
+        }
+    }
+}
+
+public class LoggingEventListener implements EventListener {
+    private final Logger logger;
+    
+    public LoggingEventListener() {
+        this.logger = Logger.getLogger(LoggingEventListener.class.getName());
+    }
+    
+    @Override
+    public void onEvent(Event event) {
+        logger.info("Event received - Type: " + event.getType() + 
+                   ", Data: " + event.getData() + 
+                   ", Timestamp: " + event.getTimestamp());
+    }
+}
+
+public class EmailEventListener implements EventListener {
+    private final String emailAddress;
+    
+    public EmailEventListener(String emailAddress) {
+        this.emailAddress = emailAddress;
+    }
+    
+    @Override
+    public void onEvent(Event event) {
+        // 이메일 전송 로직
+        System.out.println("Sending email to " + emailAddress + 
+                         " for event: " + event.getType());
+    }
+}
+``` 

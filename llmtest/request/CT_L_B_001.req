@@ -1,0 +1,100 @@
+[기능] Code Testing (코드 테스트)
+[길이] Long (긴 요청)
+[복잡도] Basic (기본)
+[설명] 간단한 쇼핑몰 시스템의 단위 테스트 작성
+
+다음 쇼핑몰 시스템에 대한 단위 테스트를 작성해줘:
+```java
+public class Product {
+    private String id;
+    private String name;
+    private double price;
+    private int stock;
+    
+    public Product(String id, String name, double price, int stock) {
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.stock = stock;
+    }
+    
+    public void updateStock(int quantity) {
+        if (stock + quantity < 0) {
+            throw new IllegalArgumentException("Insufficient stock");
+        }
+        stock += quantity;
+    }
+    
+    public boolean isAvailable() {
+        return stock > 0;
+    }
+    
+    // Getters and setters
+}
+
+public class Cart {
+    private final List<Product> items = new ArrayList<>();
+    
+    public void addItem(Product product) {
+        if (!product.isAvailable()) {
+            throw new IllegalStateException("Product is not available");
+        }
+        items.add(product);
+        product.updateStock(-1);
+    }
+    
+    public void removeItem(Product product) {
+        items.remove(product);
+        product.updateStock(1);
+    }
+    
+    public double getTotal() {
+        return items.stream()
+                   .mapToDouble(Product::getPrice)
+                   .sum();
+    }
+    
+    public List<Product> getItems() {
+        return new ArrayList<>(items);
+    }
+}
+
+public class Order {
+    private String id;
+    private List<Product> items;
+    private double total;
+    private String status;
+    
+    public Order(String id, List<Product> items) {
+        this.id = id;
+        this.items = new ArrayList<>(items);
+        this.total = calculateTotal();
+        this.status = "CREATED";
+    }
+    
+    public void process() {
+        if (items.isEmpty()) {
+            throw new IllegalStateException("Cart is empty");
+        }
+        status = "PROCESSING";
+        // 주문 처리 로직
+        status = "COMPLETED";
+    }
+    
+    public void cancel() {
+        if ("COMPLETED".equals(status)) {
+            throw new IllegalStateException("Cannot cancel completed order");
+        }
+        status = "CANCELLED";
+        // 주문 취소 로직
+    }
+    
+    private double calculateTotal() {
+        return items.stream()
+                   .mapToDouble(Product::getPrice)
+                   .sum();
+    }
+    
+    // Getters
+}
+``` 

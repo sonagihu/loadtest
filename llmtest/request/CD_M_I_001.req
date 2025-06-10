@@ -1,0 +1,43 @@
+[기능] Code Documentation (코드 문서화)
+[길이] Medium (중간 길이)
+[복잡도] Intermediate (중간)
+[설명] 옵저버 패턴이 적용된 이벤트 시스템의 Javadoc 생성
+
+다음 이벤트 처리 시스템에 대한 Javadoc을 생성해줘:
+```java
+public interface EventListener {
+    void onEvent(Event event);
+}
+
+public class EventManager {
+    private final List<EventListener> listeners = new ArrayList<>();
+    
+    public void addEventListener(EventListener listener) {
+        listeners.add(listener);
+    }
+    
+    public void removeEventListener(EventListener listener) {
+        listeners.remove(listener);
+    }
+    
+    public void notifyListeners(Event event) {
+        for (EventListener listener : listeners) {
+            listener.onEvent(event);
+        }
+    }
+}
+
+public class LoggingEventListener implements EventListener {
+    @Override
+    public void onEvent(Event event) {
+        System.out.println("Event received: " + event);
+    }
+}
+
+public class EmailEventListener implements EventListener {
+    @Override
+    public void onEvent(Event event) {
+        // 이메일 발송 로직
+    }
+}
+``` 

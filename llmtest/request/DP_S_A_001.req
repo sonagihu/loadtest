@@ -1,0 +1,127 @@
+[기능] Design Pattern (디자인 패턴)
+[길이] Short (짧은 요청)
+[복잡도] Advanced (고급)
+[설명] 데코레이터 패턴을 사용한 캐시 시스템 구현
+
+다음 데코레이터 패턴을 사용한 캐시 시스템을 구현해줘:
+```java
+public interface Cache {
+    void put(String key, Object value);
+    Object get(String key);
+    void remove(String key);
+    void clear();
+}
+
+public class BasicCache implements Cache {
+    private Map<String, Object> cache;
+    
+    public BasicCache() {
+        this.cache = new HashMap<>();
+    }
+    
+    @Override
+    public void put(String key, Object value) {
+        cache.put(key, value);
+    }
+    
+    @Override
+    public Object get(String key) {
+        return cache.get(key);
+    }
+    
+    @Override
+    public void remove(String key) {
+        cache.remove(key);
+    }
+    
+    @Override
+    public void clear() {
+        cache.clear();
+    }
+}
+
+public abstract class CacheDecorator implements Cache {
+    protected Cache cache;
+    
+    public CacheDecorator(Cache cache) {
+        this.cache = cache;
+    }
+    
+    @Override
+    public void put(String key, Object value) {
+        cache.put(key, value);
+    }
+    
+    @Override
+    public Object get(String key) {
+        return cache.get(key);
+    }
+    
+    @Override
+    public void remove(String key) {
+        cache.remove(key);
+    }
+    
+    @Override
+    public void clear() {
+        cache.clear();
+    }
+}
+
+public class LoggingCacheDecorator extends CacheDecorator {
+    public LoggingCacheDecorator(Cache cache) {
+        super(cache);
+    }
+    
+    @Override
+    public void put(String key, Object value) {
+        System.out.println("Putting value for key: " + key);
+        super.put(key, value);
+    }
+    
+    @Override
+    public Object get(String key) {
+        System.out.println("Getting value for key: " + key);
+        return super.get(key);
+    }
+}
+
+public class ExpiringCacheDecorator extends CacheDecorator {
+    private Map<String, Long> expirationTimes;
+    private long expirationTime;
+    
+    public ExpiringCacheDecorator(Cache cache, long expirationTime) {
+        super(cache);
+        this.expirationTimes = new HashMap<>();
+        this.expirationTime = expirationTime;
+    }
+    
+    @Override
+    public void put(String key, Object value) {
+        super.put(key, value);
+        expirationTimes.put(key, System.currentTimeMillis() + expirationTime);
+    }
+    
+    @Override
+    public Object get(String key) {
+        Long expirationTime = expirationTimes.get(key);
+        if (expirationTime != null && System.currentTimeMillis() > expirationTime) {
+            remove(key);
+            return null;
+        }
+        return super.get(key);
+    }
+    
+    @Override
+    public void remove(String key) {
+        super.remove(key);
+        expirationTimes.remove(key);
+    }
+    
+    @Override
+    public void clear() {
+        super.clear();
+        expirationTimes.clear();
+    }
+}
+``` 

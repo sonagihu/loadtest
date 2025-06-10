@@ -1,0 +1,143 @@
+[기능] Code Inspection (코드 검사)
+[길이] Long (긴 요청)
+[복잡도] Intermediate (중급)
+[설명] 다양한 디자인 패턴을 적용한 파일 처리 시스템의 코드 품질 검사
+
+다음 파일 처리 시스템의 코드 품질을 검사하고 개선점을 제시해줘:
+```java
+public interface FileProcessor {
+    void process(File file) throws IOException;
+}
+
+public class TextFileProcessor implements FileProcessor {
+    @Override
+    public void process(File file) throws IOException {
+        // 텍스트 파일 처리 로직
+    }
+}
+
+public class ImageFileProcessor implements FileProcessor {
+    @Override
+    public void process(File file) throws IOException {
+        // 이미지 파일 처리 로직
+    }
+}
+
+public abstract class FileProcessorDecorator implements FileProcessor {
+    protected FileProcessor processor;
+    
+    public FileProcessorDecorator(FileProcessor processor) {
+        this.processor = processor;
+    }
+    
+    @Override
+    public void process(File file) throws IOException {
+        processor.process(file);
+    }
+}
+
+public class CompressionDecorator extends FileProcessorDecorator {
+    public CompressionDecorator(FileProcessor processor) {
+        super(processor);
+    }
+    
+    @Override
+    public void process(File file) throws IOException {
+        // 압축 처리 로직
+        super.process(file);
+    }
+}
+
+public class FileProcessorFactory {
+    public static FileProcessor createProcessor(String fileType) {
+        switch (fileType.toLowerCase()) {
+            case "txt":
+                return new TextFileProcessor();
+            case "jpg":
+            case "png":
+                return new ImageFileProcessor();
+            default:
+                throw new IllegalArgumentException("Unsupported file type");
+        }
+    }
+}
+
+public interface ProcessingObserver {
+    void onProcessingStart(File file);
+    void onProcessingComplete(File file);
+    void onProcessingError(File file, Exception e);
+}
+
+public class FileProcessingManager {
+    private final List<ProcessingObserver> observers = new ArrayList<>();
+    private final FileProcessorFactory factory;
+    
+    public FileProcessingManager() {
+        this.factory = new FileProcessorFactory();
+    }
+    
+    public void addObserver(ProcessingObserver observer) {
+        observers.add(observer);
+    }
+    
+    public void removeObserver(ProcessingObserver observer) {
+        observers.remove(observer);
+    }
+    
+    public void processFile(File file) {
+        String fileType = getFileExtension(file);
+        FileProcessor processor = factory.createProcessor(fileType);
+        
+        notifyProcessingStart(file);
+        try {
+            processor.process(file);
+            notifyProcessingComplete(file);
+        } catch (Exception e) {
+            notifyProcessingError(file, e);
+        }
+    }
+    
+    private void notifyProcessingStart(File file) {
+        for (ProcessingObserver observer : observers) {
+            observer.onProcessingStart(file);
+        }
+    }
+    
+    private void notifyProcessingComplete(File file) {
+        for (ProcessingObserver observer : observers) {
+            observer.onProcessingComplete(file);
+        }
+    }
+    
+    private void notifyProcessingError(File file, Exception e) {
+        for (ProcessingObserver observer : observers) {
+            observer.onProcessingError(file, e);
+        }
+    }
+    
+    private String getFileExtension(File file) {
+        String name = file.getName();
+        int lastIndexOf = name.lastIndexOf(".");
+        if (lastIndexOf == -1) {
+            return "";
+        }
+        return name.substring(lastIndexOf + 1);
+    }
+}
+
+public class LoggingObserver implements ProcessingObserver {
+    @Override
+    public void onProcessingStart(File file) {
+        System.out.println("Processing started: " + file.getName());
+    }
+    
+    @Override
+    public void onProcessingComplete(File file) {
+        System.out.println("Processing completed: " + file.getName());
+    }
+    
+    @Override
+    public void onProcessingError(File file, Exception e) {
+        System.err.println("Processing error for " + file.getName() + ": " + e.getMessage());
+    }
+} 

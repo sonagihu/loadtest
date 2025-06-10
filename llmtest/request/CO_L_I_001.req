@@ -1,0 +1,143 @@
+[기능] Code Optimization (코드 최적화)
+[길이] Long (긴 요청)
+[복잡도] Intermediate (중간)
+[설명] 파일 처리 시스템의 성능 최적화
+
+다음 파일 처리 시스템의 성능을 최적화해줘:
+```java
+public interface FileProcessor {
+    void process(File file) throws IOException;
+}
+
+public class TextFileProcessor implements FileProcessor {
+    @Override
+    public void process(File file) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // 텍스트 처리 로직
+            }
+        }
+    }
+}
+
+public class ImageFileProcessor implements FileProcessor {
+    @Override
+    public void process(File file) throws IOException {
+        BufferedImage image = ImageIO.read(file);
+        if (image == null) {
+            throw new IOException("Invalid image file");
+        }
+        // 이미지 처리 로직
+    }
+}
+
+public abstract class FileProcessorDecorator implements FileProcessor {
+    protected FileProcessor processor;
+    
+    public FileProcessorDecorator(FileProcessor processor) {
+        this.processor = processor;
+    }
+    
+    @Override
+    public void process(File file) throws IOException {
+        processor.process(file);
+    }
+}
+
+public class CompressionDecorator extends FileProcessorDecorator {
+    public CompressionDecorator(FileProcessor processor) {
+        super(processor);
+    }
+    
+    @Override
+    public void process(File file) throws IOException {
+        // 압축 처리 로직
+        super.process(file);
+        // 압축 해제 로직
+    }
+}
+
+public class FileProcessorFactory {
+    public static FileProcessor createProcessor(String fileType) {
+        switch (fileType.toLowerCase()) {
+            case "txt":
+                return new TextFileProcessor();
+            case "jpg":
+            case "png":
+                return new ImageFileProcessor();
+            default:
+                throw new IllegalArgumentException("Unsupported file type: " + fileType);
+        }
+    }
+}
+
+public interface ProcessingObserver {
+    void onProcessingStart(File file);
+    void onProcessingComplete(File file);
+    void onProcessingError(File file, Exception e);
+}
+
+public class FileProcessingManager {
+    private final List<ProcessingObserver> observers = new ArrayList<>();
+    private final FileProcessor processor;
+    
+    public FileProcessingManager(FileProcessor processor) {
+        this.processor = processor;
+    }
+    
+    public void addObserver(ProcessingObserver observer) {
+        observers.add(observer);
+    }
+    
+    public void removeObserver(ProcessingObserver observer) {
+        observers.remove(observer);
+    }
+    
+    public void processFile(File file) {
+        notifyProcessingStart(file);
+        try {
+            processor.process(file);
+            notifyProcessingComplete(file);
+        } catch (Exception e) {
+            notifyProcessingError(file, e);
+        }
+    }
+    
+    private void notifyProcessingStart(File file) {
+        for (ProcessingObserver observer : observers) {
+            observer.onProcessingStart(file);
+        }
+    }
+    
+    private void notifyProcessingComplete(File file) {
+        for (ProcessingObserver observer : observers) {
+            observer.onProcessingComplete(file);
+        }
+    }
+    
+    private void notifyProcessingError(File file, Exception e) {
+        for (ProcessingObserver observer : observers) {
+            observer.onProcessingError(file, e);
+        }
+    }
+}
+
+public class LoggingObserver implements ProcessingObserver {
+    private final Logger logger = LoggerFactory.getLogger(LoggingObserver.class);
+    
+    @Override
+    public void onProcessingStart(File file) {
+        logger.info("Started processing file: {}", file.getName());
+    }
+    
+    @Override
+    public void onProcessingComplete(File file) {
+        logger.info("Completed processing file: {}", file.getName());
+    }
+    
+    @Override
+    public void onProcessingError(File file, Exception e) {
+        logger.error("Error processing file: {}", file.getName(), e);
+    }
+} 

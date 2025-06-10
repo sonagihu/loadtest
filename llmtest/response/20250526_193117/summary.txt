@@ -1,2 +1,0 @@
-Test Case,Response Code,Elapsed Time (ms)
-tc001.req,200,14257.60

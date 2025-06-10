@@ -1,0 +1,71 @@
+[기능] Code Documentation (코드 문서화)
+[길이] Long (긴 요청)
+[복잡도] Basic (기본)
+[설명] 간단한 쇼핑몰 시스템의 Javadoc 생성
+
+다음 쇼핑몰 시스템의 각 클래스에 대한 Javadoc을 생성해줘:
+```java
+public class Product {
+    private String id;
+    private String name;
+    private double price;
+    private int stock;
+    
+    public void updateStock(int quantity) {
+        if (stock + quantity < 0) {
+            throw new IllegalArgumentException("Insufficient stock");
+        }
+        stock += quantity;
+    }
+    
+    public boolean isAvailable() {
+        return stock > 0;
+    }
+}
+
+public class Cart {
+    private List<Product> items = new ArrayList<>();
+    
+    public void addItem(Product product) {
+        if (!product.isAvailable()) {
+            throw new IllegalStateException("Product is not available");
+        }
+        items.add(product);
+        product.updateStock(-1);
+    }
+    
+    public void removeItem(Product product) {
+        items.remove(product);
+        product.updateStock(1);
+    }
+    
+    public double getTotal() {
+        return items.stream()
+                   .mapToDouble(Product::getPrice)
+                   .sum();
+    }
+}
+
+public class Order {
+    private String id;
+    private List<Product> items;
+    private double total;
+    private String status;
+    
+    public void process() {
+        if (items.isEmpty()) {
+            throw new IllegalStateException("Cart is empty");
+        }
+        status = "PROCESSING";
+        // 주문 처리 로직
+        status = "COMPLETED";
+    }
+    
+    public void cancel() {
+        if ("COMPLETED".equals(status)) {
+            throw new IllegalStateException("Cannot cancel completed order");
+        }
+        status = "CANCELLED";
+        // 주문 취소 로직
+    }
+} 

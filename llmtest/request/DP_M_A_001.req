@@ -1,0 +1,185 @@
+기능: Design Pattern (디자인 패턴)
+길이: Medium (중간 요청)
+복잡도: Advanced (고급)
+
+다음 비동기 작업 큐 시스템에 적절한 디자인 패턴을 적용하여 개선해주세요:
+
+```java
+public interface Task {
+    void execute() throws Exception;
+    void cancel();
+    boolean isCompleted();
+    boolean isCancelled();
+}
+
+public class AsyncTaskQueue {
+    private final ExecutorService executor;
+    private final Map<String, Future<?>> tasks;
+    
+    public AsyncTaskQueue(int poolSize) {
+        this.executor = Executors.newFixedThreadPool(poolSize);
+        this.tasks = new ConcurrentHashMap<>();
+    }
+    
+    public void submit(String taskId, Task task) {
+        if (tasks.containsKey(taskId)) {
+            throw new IllegalStateException("Task already exists: " + taskId);
+        }
+        
+        Future<?> future = executor.submit(() -> {
+            try {
+                task.execute();
+            } catch (Exception e) {
+                System.err.println("Task execution failed: " + e.getMessage());
+            }
+        });
+        
+        tasks.put(taskId, future);
+    }
+    
+    public void cancel(String taskId) {
+        Future<?> future = tasks.get(taskId);
+        if (future != null) {
+            future.cancel(true);
+            tasks.remove(taskId);
+        }
+    }
+    
+    public boolean isTaskCompleted(String taskId) {
+        Future<?> future = tasks.get(taskId);
+        return future != null && future.isDone();
+    }
+    
+    public void shutdown() {
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+        }
+    }
+}
+
+public class TaskStatus {
+    private final String taskId;
+    private final TaskState state;
+    private final String message;
+    
+    public TaskStatus(String taskId, TaskState state, String message) {
+        this.taskId = taskId;
+        this.state = state;
+        this.message = message;
+    }
+    
+    // Getters
+}
+
+public enum TaskState {
+    PENDING,
+    RUNNING,
+    COMPLETED,
+    FAILED,
+    CANCELLED
+}
+
+public interface TaskListener {
+    void onTaskStarted(String taskId);
+    void onTaskCompleted(String taskId);
+    void onTaskFailed(String taskId, Exception e);
+    void onTaskCancelled(String taskId);
+}
+
+public class TaskManager {
+    private final AsyncTaskQueue queue;
+    private final List<TaskListener> listeners;
+    private final Map<String, TaskStatus> taskStatuses;
+    
+    public TaskManager(int poolSize) {
+        this.queue = new AsyncTaskQueue(poolSize);
+        this.listeners = new ArrayList<>();
+        this.taskStatuses = new ConcurrentHashMap<>();
+    }
+    
+    public void addListener(TaskListener listener) {
+        listeners.add(listener);
+    }
+    
+    public void removeListener(TaskListener listener) {
+        listeners.remove(listener);
+    }
+    
+    public void submitTask(String taskId, Task task) {
+        updateTaskStatus(taskId, TaskState.PENDING, "Task submitted");
+        notifyTaskStarted(taskId);
+        
+        queue.submit(taskId, new Task() {
+            @Override
+            public void execute() throws Exception {
+                updateTaskStatus(taskId, TaskState.RUNNING, "Task running");
+                try {
+                    task.execute();
+                    updateTaskStatus(taskId, TaskState.COMPLETED, "Task completed");
+                    notifyTaskCompleted(taskId);
+                } catch (Exception e) {
+                    updateTaskStatus(taskId, TaskState.FAILED, "Task failed: " + e.getMessage());
+                    notifyTaskFailed(taskId, e);
+                }
+            }
+            
+            @Override
+            public void cancel() {
+                task.cancel();
+                updateTaskStatus(taskId, TaskState.CANCELLED, "Task cancelled");
+                notifyTaskCancelled(taskId);
+            }
+            
+            @Override
+            public boolean isCompleted() {
+                return task.isCompleted();
+            }
+            
+            @Override
+            public boolean isCancelled() {
+                return task.isCancelled();
+            }
+        });
+    }
+    
+    private void updateTaskStatus(String taskId, TaskState state, String message) {
+        taskStatuses.put(taskId, new TaskStatus(taskId, state, message));
+    }
+    
+    private void notifyTaskStarted(String taskId) {
+        for (TaskListener listener : listeners) {
+            listener.onTaskStarted(taskId);
+        }
+    }
+    
+    private void notifyTaskCompleted(String taskId) {
+        for (TaskListener listener : listeners) {
+            listener.onTaskCompleted(taskId);
+        }
+    }
+    
+    private void notifyTaskFailed(String taskId, Exception e) {
+        for (TaskListener listener : listeners) {
+            listener.onTaskFailed(taskId, e);
+        }
+    }
+    
+    private void notifyTaskCancelled(String taskId) {
+        for (TaskListener listener : listeners) {
+            listener.onTaskCancelled(taskId);
+        }
+    }
+    
+    public TaskStatus getTaskStatus(String taskId) {
+        return taskStatuses.get(taskId);
+    }
+    
+    public void shutdown() {
+        queue.shutdown();
+    }
+} 

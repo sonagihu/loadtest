@@ -1,0 +1,86 @@
+[기능] Bug Fixing (버그 수정)
+[길이] Short (짧은 요청)
+[복잡도] Advanced (고급)
+[설명] 스레드 안전 캐시 클래스의 버그 수정
+
+다음 스레드 안전 캐시 클래스의 버그를 찾아 수정해줘:
+```java
+public class ThreadSafeCache {
+    private Map<String, CacheEntry> cache;
+    private ScheduledExecutorService cleanupExecutor;
+    
+    public ThreadSafeCache() {
+        this.cache = new HashMap<>();
+        this.cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
+        scheduleCleanup();
+    }
+    
+    public void put(String key, Object value, long expirationTime) {
+        CacheEntry entry = new CacheEntry(value, System.currentTimeMillis() + expirationTime);
+        cache.put(key, entry);
+    }
+    
+    public Object get(String key) {
+        CacheEntry entry = cache.get(key);
+        if (entry == null) {
+            return null;
+        }
+        
+        if (entry.isExpired()) {
+            cache.remove(key);
+            return null;
+        }
+        
+        return entry.getValue();
+    }
+    
+    public void remove(String key) {
+        cache.remove(key);
+    }
+    
+    public void clear() {
+        cache.clear();
+    }
+    
+    private void scheduleCleanup() {
+        cleanupExecutor.scheduleAtFixedRate(() -> {
+            Iterator<Map.Entry<String, CacheEntry>> iterator = cache.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<String, CacheEntry> entry = iterator.next();
+                if (entry.getValue().isExpired()) {
+                    iterator.remove();
+                }
+            }
+        }, 1, 1, TimeUnit.MINUTES);
+    }
+    
+    public void shutdown() {
+        cleanupExecutor.shutdown();
+        try {
+            if (!cleanupExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+                cleanupExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            cleanupExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+    
+    private static class CacheEntry {
+        private Object value;
+        private long expirationTime;
+        
+        public CacheEntry(Object value, long expirationTime) {
+            this.value = value;
+            this.expirationTime = expirationTime;
+        }
+        
+        public Object getValue() {
+            return value;
+        }
+        
+        public boolean isExpired() {
+            return System.currentTimeMillis() > expirationTime;
+        }
+    }
+} 

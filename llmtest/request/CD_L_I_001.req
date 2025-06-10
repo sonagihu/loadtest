@@ -1,0 +1,194 @@
+[기능] Code Documentation (코드 문서화)
+[길이] Long (긴 요청)
+[복잡도] Intermediate (중급)
+[설명] 파일 처리 시스템의 코드 문서화
+
+다음 파일 처리 시스템의 코드를 문서화해줘:
+```java
+public interface FileProcessor {
+    void process(String filePath) throws ProcessingException;
+    String getSupportedFileType();
+}
+
+public class TextFileProcessor implements FileProcessor {
+    @Override
+    public void process(String filePath) throws ProcessingException {
+        try {
+            List<String> lines = Files.readAllLines(Paths.get(filePath));
+            for (String line : lines) {
+                // 텍스트 처리 로직
+                System.out.println("Processing text: " + line);
+            }
+        } catch (IOException e) {
+            throw new ProcessingException("Failed to process text file", e);
+        }
+    }
+    
+    @Override
+    public String getSupportedFileType() {
+        return "txt";
+    }
+}
+
+public class ImageFileProcessor implements FileProcessor {
+    @Override
+    public void process(String filePath) throws ProcessingException {
+        try {
+            BufferedImage image = ImageIO.read(new File(filePath));
+            // 이미지 처리 로직
+            System.out.println("Processing image: " + filePath);
+        } catch (IOException e) {
+            throw new ProcessingException("Failed to process image file", e);
+        }
+    }
+    
+    @Override
+    public String getSupportedFileType() {
+        return "jpg";
+    }
+}
+
+public abstract class FileProcessorDecorator implements FileProcessor {
+    protected FileProcessor processor;
+    
+    public FileProcessorDecorator(FileProcessor processor) {
+        this.processor = processor;
+    }
+    
+    @Override
+    public void process(String filePath) throws ProcessingException {
+        processor.process(filePath);
+    }
+    
+    @Override
+    public String getSupportedFileType() {
+        return processor.getSupportedFileType();
+    }
+}
+
+public class CompressionDecorator extends FileProcessorDecorator {
+    public CompressionDecorator(FileProcessor processor) {
+        super(processor);
+    }
+    
+    @Override
+    public void process(String filePath) throws ProcessingException {
+        try {
+            // 압축 처리 로직
+            System.out.println("Compressing file: " + filePath);
+            super.process(filePath);
+        } catch (ProcessingException e) {
+            throw new ProcessingException("Failed to compress file", e);
+        }
+    }
+}
+
+public class FileProcessorFactory {
+    private static final Map<String, FileProcessor> processors = new HashMap<>();
+    
+    static {
+        processors.put("txt", new TextFileProcessor());
+        processors.put("jpg", new ImageFileProcessor());
+    }
+    
+    public static FileProcessor createProcessor(String fileType) {
+        FileProcessor processor = processors.get(fileType.toLowerCase());
+        if (processor == null) {
+            throw new IllegalArgumentException("Unsupported file type: " + fileType);
+        }
+        return processor;
+    }
+}
+
+public interface ProcessingObserver {
+    void onProcessingStarted(String filePath);
+    void onProcessingCompleted(String filePath);
+    void onProcessingFailed(String filePath, Exception e);
+}
+
+public class FileProcessingManager {
+    private final List<ProcessingObserver> observers;
+    private final FileProcessorFactory factory;
+    
+    public FileProcessingManager() {
+        this.observers = new ArrayList<>();
+        this.factory = new FileProcessorFactory();
+    }
+    
+    public void addObserver(ProcessingObserver observer) {
+        observers.add(observer);
+    }
+    
+    public void removeObserver(ProcessingObserver observer) {
+        observers.remove(observer);
+    }
+    
+    public void processFile(String filePath) {
+        String fileType = getFileExtension(filePath);
+        FileProcessor processor = factory.createProcessor(fileType);
+        
+        notifyProcessingStarted(filePath);
+        try {
+            processor.process(filePath);
+            notifyProcessingCompleted(filePath);
+        } catch (ProcessingException e) {
+            notifyProcessingFailed(filePath, e);
+        }
+    }
+    
+    private String getFileExtension(String filePath) {
+        int dotIndex = filePath.lastIndexOf('.');
+        return dotIndex > 0 ? filePath.substring(dotIndex + 1) : "";
+    }
+    
+    private void notifyProcessingStarted(String filePath) {
+        for (ProcessingObserver observer : observers) {
+            observer.onProcessingStarted(filePath);
+        }
+    }
+    
+    private void notifyProcessingCompleted(String filePath) {
+        for (ProcessingObserver observer : observers) {
+            observer.onProcessingCompleted(filePath);
+        }
+    }
+    
+    private void notifyProcessingFailed(String filePath, Exception e) {
+        for (ProcessingObserver observer : observers) {
+            observer.onProcessingFailed(filePath, e);
+        }
+    }
+}
+
+public class LoggingObserver implements ProcessingObserver {
+    private final Logger logger;
+    
+    public LoggingObserver() {
+        this.logger = Logger.getLogger(LoggingObserver.class.getName());
+    }
+    
+    @Override
+    public void onProcessingStarted(String filePath) {
+        logger.info("Started processing file: " + filePath);
+    }
+    
+    @Override
+    public void onProcessingCompleted(String filePath) {
+        logger.info("Completed processing file: " + filePath);
+    }
+    
+    @Override
+    public void onProcessingFailed(String filePath, Exception e) {
+        logger.severe("Failed to process file: " + filePath + ", Error: " + e.getMessage());
+    }
+}
+
+public class ProcessingException extends Exception {
+    public ProcessingException(String message) {
+        super(message);
+    }
+    
+    public ProcessingException(String message, Throwable cause) {
+        super(message, cause);
+    }
+} 

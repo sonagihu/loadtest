@@ -1,0 +1,137 @@
+[기능] Bug Fixing (버그 수정)
+[길이] Medium (중간 요청)
+[복잡도] Intermediate (중급)
+[설명] 이벤트 처리 시스템의 버그 수정
+
+다음 이벤트 처리 시스템의 버그를 찾아 수정해줘:
+```java
+public interface EventListener {
+    void onEvent(Event event);
+}
+
+public class Event {
+    private String type;
+    private Object data;
+    private long timestamp;
+    
+    public Event(String type, Object data) {
+        this.type = type;
+        this.data = data;
+        this.timestamp = System.currentTimeMillis();
+    }
+    
+    public String getType() {
+        return type;
+    }
+    
+    public Object getData() {
+        return data;
+    }
+    
+    public long getTimestamp() {
+        return timestamp;
+    }
+}
+
+public class EventManager {
+    private List<EventListener> listeners;
+    private Map<String, List<EventListener>> typeListeners;
+    
+    public EventManager() {
+        this.listeners = new ArrayList<>();
+        this.typeListeners = new HashMap<>();
+    }
+    
+    public void addListener(EventListener listener) {
+        listeners.add(listener);
+    }
+    
+    public void addListener(String type, EventListener listener) {
+        typeListeners.computeIfAbsent(type, k -> new ArrayList<>()).add(listener);
+    }
+    
+    public void removeListener(EventListener listener) {
+        listeners.remove(listener);
+        for (List<EventListener> typeListenerList : typeListeners.values()) {
+            typeListenerList.remove(listener);
+        }
+    }
+    
+    public void notifyListeners(Event event) {
+        // 모든 리스너에게 알림
+        for (EventListener listener : listeners) {
+            listener.onEvent(event);
+        }
+        
+        // 특정 타입의 리스너에게 알림
+        List<EventListener> typeListenerList = typeListeners.get(event.getType());
+        if (typeListenerList != null) {
+            for (EventListener listener : typeListenerList) {
+                listener.onEvent(event);
+            }
+        }
+    }
+}
+
+public class LoggingEventListener implements EventListener {
+    @Override
+    public void onEvent(Event event) {
+        System.out.println("Event received: " + event.getType() + " at " + new Date(event.getTimestamp()));
+        System.out.println("Data: " + event.getData());
+    }
+}
+
+public class EmailEventListener implements EventListener {
+    @Override
+    public void onEvent(Event event) {
+        if (event.getType().equals("USER_REGISTERED")) {
+            String email = (String) event.getData();
+            sendWelcomeEmail(email);
+        }
+    }
+    
+    private void sendWelcomeEmail(String email) {
+        // 이메일 발송 로직
+        System.out.println("Welcome email sent to: " + email);
+    }
+}
+
+public class EventProcessor {
+    private EventManager eventManager;
+    private ExecutorService executorService;
+    
+    public EventProcessor() {
+        this.eventManager = new EventManager();
+        this.executorService = Executors.newFixedThreadPool(5);
+    }
+    
+    public void processEvent(Event event) {
+        executorService.submit(() -> {
+            try {
+                eventManager.notifyListeners(event);
+            } catch (Exception e) {
+                System.err.println("Error processing event: " + e.getMessage());
+            }
+        });
+    }
+    
+    public void addEventListener(EventListener listener) {
+        eventManager.addListener(listener);
+    }
+    
+    public void addEventListener(String type, EventListener listener) {
+        eventManager.addListener(type, listener);
+    }
+    
+    public void shutdown() {
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+} 

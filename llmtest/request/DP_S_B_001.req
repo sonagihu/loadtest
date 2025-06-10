@@ -1,0 +1,45 @@
+[기능] Design Pattern (디자인 패턴)
+[길이] Short (짧은 요청)
+[복잡도] Basic (기본)
+[설명] 싱글톤 패턴을 사용한 데이터베이스 연결 클래스 구현
+
+다음 싱글톤 패턴을 사용한 데이터베이스 연결 클래스를 구현해줘:
+```java
+public class DatabaseConnection {
+    private static DatabaseConnection instance;
+    private Connection connection;
+    private boolean isConnected;
+    
+    private DatabaseConnection() {
+        this.isConnected = false;
+    }
+    
+    public static synchronized DatabaseConnection getInstance() {
+        if (instance == null) {
+            instance = new DatabaseConnection();
+        }
+        return instance;
+    }
+    
+    public void connect() {
+        if (!isConnected) {
+            // 데이터베이스 연결 로직
+            isConnected = true;
+        }
+    }
+    
+    public void disconnect() {
+        if (isConnected) {
+            // 데이터베이스 연결 해제 로직
+            isConnected = false;
+        }
+    }
+    
+    public boolean isConnected() {
+        return isConnected;
+    }
+    
+    public Connection getConnection() {
+        return connection;
+    }
+} 

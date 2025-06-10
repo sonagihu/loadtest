@@ -1,0 +1,11 @@
+[기능] Code Documentation (코드 문서화)
+[길이] Short (짧은 요청)
+[복잡도] Basic (기본)
+[설명] 간단한 유틸리티 메소드의 Javadoc 생성
+
+다음 메소드에 대한 Javadoc을 생성해줘:
+```java
+public static int calculateSum(int[] numbers) {
+    return Arrays.stream(numbers).sum();
+}
+``` 

@@ -1,0 +1,67 @@
+[기능] Code Inspection (코드 검사)
+[길이] Short (짧은 요청)
+[복잡도] Advanced (고급)
+[설명] 스레드 안전한 캐시 클래스의 코드 품질 검사
+
+다음 ThreadSafeCache 클래스의 코드 품질을 검사하고 개선점을 제시해줘:
+```java
+public class ThreadSafeCache<K, V> {
+    private final Map<K, CacheEntry<V>> cache;
+    private final long expirationTime;
+    private final ScheduledExecutorService cleanupExecutor;
+    
+    public ThreadSafeCache(long expirationTimeMillis) {
+        this.cache = new ConcurrentHashMap<>();
+        this.expirationTime = expirationTimeMillis;
+        this.cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
+        scheduleCleanup();
+    }
+    
+    public void put(K key, V value) {
+        cache.put(key, new CacheEntry<>(value));
+    }
+    
+    public V get(K key) {
+        CacheEntry<V> entry = cache.get(key);
+        if (entry == null || entry.isExpired()) {
+            cache.remove(key);
+            return null;
+        }
+        return entry.getValue();
+    }
+    
+    public void remove(K key) {
+        cache.remove(key);
+    }
+    
+    private void scheduleCleanup() {
+        cleanupExecutor.scheduleAtFixedRate(this::removeExpiredEntries, 
+            expirationTime, expirationTime, TimeUnit.MILLISECONDS);
+    }
+    
+    private void removeExpiredEntries() {
+        cache.entrySet().removeIf(entry -> entry.getValue().isExpired());
+    }
+    
+    public void shutdown() {
+        cleanupExecutor.shutdown();
+    }
+    
+    private static class CacheEntry<V> {
+        private final V value;
+        private final long timestamp;
+        
+        public CacheEntry(V value) {
+            this.value = value;
+            this.timestamp = System.currentTimeMillis();
+        }
+        
+        public V getValue() {
+            return value;
+        }
+        
+        public boolean isExpired() {
+            return System.currentTimeMillis() - timestamp > expirationTime;
+        }
+    }
+} 

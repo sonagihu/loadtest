@@ -1,0 +1,85 @@
+[기능] Design Pattern (디자인 패턴)
+[길이] Medium (중간 요청)
+[복잡도] Basic (기본)
+[설명] 팩토리 패턴을 사용한 문서 생성 시스템 구현
+
+다음 팩토리 패턴을 사용한 문서 생성 시스템을 구현해줘:
+```java
+public interface Document {
+    void create();
+    void save();
+    void print();
+}
+
+public class TextDocument implements Document {
+    private String content;
+    
+    public TextDocument() {
+        this.content = "";
+    }
+    
+    @Override
+    public void create() {
+        this.content = "새로운 텍스트 문서";
+    }
+    
+    @Override
+    public void save() {
+        System.out.println("텍스트 문서 저장: " + content);
+    }
+    
+    @Override
+    public void print() {
+        System.out.println("텍스트 문서 출력: " + content);
+    }
+}
+
+public class PDFDocument implements Document {
+    private String content;
+    
+    public PDFDocument() {
+        this.content = "";
+    }
+    
+    @Override
+    public void create() {
+        this.content = "새로운 PDF 문서";
+    }
+    
+    @Override
+    public void save() {
+        System.out.println("PDF 문서 저장: " + content);
+    }
+    
+    @Override
+    public void print() {
+        System.out.println("PDF 문서 출력: " + content);
+    }
+}
+
+public class DocumentFactory {
+    public static Document createDocument(String type) {
+        if (type.equalsIgnoreCase("text")) {
+            return new TextDocument();
+        } else if (type.equalsIgnoreCase("pdf")) {
+            return new PDFDocument();
+        }
+        throw new IllegalArgumentException("지원하지 않는 문서 타입: " + type);
+    }
+}
+
+public class DocumentManager {
+    private DocumentFactory factory;
+    
+    public DocumentManager() {
+        this.factory = new DocumentFactory();
+    }
+    
+    public void processDocument(String type) {
+        Document document = DocumentFactory.createDocument(type);
+        document.create();
+        document.save();
+        document.print();
+    }
+}
+``` 

@@ -1,0 +1,103 @@
+기능: Design Pattern (디자인 패턴)
+길이: Medium (중간 요청)
+복잡도: Intermediate (중간)
+
+다음 이벤트 처리 시스템에 적절한 디자인 패턴을 적용하여 개선해주세요:
+
+```java
+public interface EventListener {
+    void onEvent(Event event);
+}
+
+public class Event {
+    private final String type;
+    private final Object data;
+    private final long timestamp;
+    
+    public Event(String type, Object data) {
+        this.type = type;
+        this.data = data;
+        this.timestamp = System.currentTimeMillis();
+    }
+    
+    // Getters
+}
+
+public class EventManager {
+    private final Map<String, List<EventListener>> listeners;
+    
+    public EventManager() {
+        this.listeners = new ConcurrentHashMap<>();
+    }
+    
+    public void addEventListener(String eventType, EventListener listener) {
+        listeners.computeIfAbsent(eventType, k -> new ArrayList<>()).add(listener);
+    }
+    
+    public void removeEventListener(String eventType, EventListener listener) {
+        List<EventListener> eventListeners = listeners.get(eventType);
+        if (eventListeners != null) {
+            eventListeners.remove(listener);
+        }
+    }
+    
+    public void fireEvent(Event event) {
+        List<EventListener> eventListeners = listeners.get(event.getType());
+        if (eventListeners != null) {
+            for (EventListener listener : eventListeners) {
+                try {
+                    listener.onEvent(event);
+                } catch (Exception e) {
+                    System.err.println("Error handling event: " + e.getMessage());
+                }
+            }
+        }
+    }
+}
+
+public class LoggingEventListener implements EventListener {
+    @Override
+    public void onEvent(Event event) {
+        System.out.println("Event received: " + event.getType() + " at " + 
+            new Date(event.getTimestamp()));
+    }
+}
+
+public class EmailEventListener implements EventListener {
+    @Override
+    public void onEvent(Event event) {
+        if (event.getType().equals("USER_REGISTERED")) {
+            System.out.println("Sending welcome email to: " + event.getData());
+        }
+    }
+}
+
+public class EventProcessor {
+    private final EventManager eventManager;
+    private final ExecutorService executor;
+    
+    public EventProcessor() {
+        this.eventManager = new EventManager();
+        this.executor = Executors.newFixedThreadPool(5);
+    }
+    
+    public void registerListener(String eventType, EventListener listener) {
+        eventManager.addEventListener(eventType, listener);
+    }
+    
+    public void processEvent(Event event) {
+        executor.submit(() -> eventManager.fireEvent(event));
+    }
+    
+    public void shutdown() {
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+        }
+    }
+}
+``` 

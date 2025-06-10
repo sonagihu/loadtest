@@ -1,0 +1,81 @@
+[기능] Code Testing (코드 테스트)
+[길이] Short (짧은 요청)
+[복잡도] Advanced (고급)
+[설명] 동시성 처리가 필요한 캐시 클래스의 단위 테스트 작성
+
+다음 동시성 처리가 필요한 캐시 클래스에 대한 단위 테스트를 작성해줘:
+```java
+public class ThreadSafeCache<K, V> {
+    private final Map<K, V> cache = new ConcurrentHashMap<>();
+    private final Map<K, Long> expirationTimes = new ConcurrentHashMap<>();
+    private final long defaultExpirationTime;
+    
+    public ThreadSafeCache(long defaultExpirationTimeMillis) {
+        this.defaultExpirationTime = defaultExpirationTimeMillis;
+        startExpirationChecker();
+    }
+    
+    public void put(K key, V value) {
+        put(key, value, defaultExpirationTime);
+    }
+    
+    public void put(K key, V value, long expirationTimeMillis) {
+        cache.put(key, value);
+        expirationTimes.put(key, System.currentTimeMillis() + expirationTimeMillis);
+    }
+    
+    public V get(K key) {
+        if (isExpired(key)) {
+            remove(key);
+            return null;
+        }
+        return cache.get(key);
+    }
+    
+    public void remove(K key) {
+        cache.remove(key);
+        expirationTimes.remove(key);
+    }
+    
+    public boolean containsKey(K key) {
+        if (isExpired(key)) {
+            remove(key);
+            return false;
+        }
+        return cache.containsKey(key);
+    }
+    
+    public void clear() {
+        cache.clear();
+        expirationTimes.clear();
+    }
+    
+    private boolean isExpired(K key) {
+        Long expirationTime = expirationTimes.get(key);
+        return expirationTime != null && System.currentTimeMillis() > expirationTime;
+    }
+    
+    private void startExpirationChecker() {
+        Thread checker = new Thread(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    Thread.sleep(1000);
+                    checkExpirations();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        });
+        checker.setDaemon(true);
+        checker.start();
+    }
+    
+    private void checkExpirations() {
+        for (K key : new HashSet<>(cache.keySet())) {
+            if (isExpired(key)) {
+                remove(key);
+            }
+        }
+    }
+} 

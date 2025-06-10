@@ -1,0 +1,147 @@
+[기능] Code Documentation (코드 문서화)
+[길이] Long (긴 요청)
+[복잡도] Advanced (고급)
+[설명] 분산 시스템의 메시지 큐 구현체의 Javadoc 생성
+
+다음 분산 메시지 큐 시스템의 각 클래스에 대한 Javadoc을 생성해줘:
+```java
+public interface Message {
+    String getId();
+    String getContent();
+    long getTimestamp();
+}
+
+public interface MessageQueue {
+    void publish(Message message);
+    void subscribe(String topic, MessageHandler handler);
+    void unsubscribe(String topic, MessageHandler handler);
+}
+
+public interface MessageHandler {
+    void handle(Message message);
+}
+
+public class DistributedMessageQueue implements MessageQueue {
+    private final Map<String, List<MessageHandler>> subscribers = new ConcurrentHashMap<>();
+    private final Map<String, List<Message>> messageHistory = new ConcurrentHashMap<>();
+    private final int maxHistorySize;
+    
+    public DistributedMessageQueue(int maxHistorySize) {
+        this.maxHistorySize = maxHistorySize;
+    }
+    
+    @Override
+    public void publish(Message message) {
+        String topic = extractTopic(message);
+        List<MessageHandler> handlers = subscribers.get(topic);
+        if (handlers != null) {
+            for (MessageHandler handler : handlers) {
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        handler.handle(message);
+                    } catch (Exception e) {
+                        handleError(topic, message, e);
+                    }
+                });
+            }
+        }
+        updateMessageHistory(topic, message);
+    }
+    
+    @Override
+    public void subscribe(String topic, MessageHandler handler) {
+        subscribers.computeIfAbsent(topic, k -> new CopyOnWriteArrayList<>())
+                  .add(handler);
+        replayHistory(topic, handler);
+    }
+    
+    @Override
+    public void unsubscribe(String topic, MessageHandler handler) {
+        List<MessageHandler> handlers = subscribers.get(topic);
+        if (handlers != null) {
+            handlers.remove(handler);
+        }
+    }
+    
+    private void updateMessageHistory(String topic, Message message) {
+        messageHistory.computeIfAbsent(topic, k -> new CopyOnWriteArrayList<>())
+                     .add(message);
+        trimHistory(topic);
+    }
+    
+    private void trimHistory(String topic) {
+        List<Message> history = messageHistory.get(topic);
+        if (history != null && history.size() > maxHistorySize) {
+            history.subList(0, history.size() - maxHistorySize).clear();
+        }
+    }
+    
+    private void replayHistory(String topic, MessageHandler handler) {
+        List<Message> history = messageHistory.get(topic);
+        if (history != null) {
+            for (Message message : history) {
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        handler.handle(message);
+                    } catch (Exception e) {
+                        handleError(topic, message, e);
+                    }
+                });
+            }
+        }
+    }
+    
+    private void handleError(String topic, Message message, Exception e) {
+        // 에러 처리 로직
+    }
+    
+    private String extractTopic(Message message) {
+        // 토픽 추출 로직
+        return "default";
+    }
+}
+
+public class MessageBroker {
+    private final DistributedMessageQueue queue;
+    private final Map<String, List<String>> routingTable = new ConcurrentHashMap<>();
+    
+    public MessageBroker(int maxHistorySize) {
+        this.queue = new DistributedMessageQueue(maxHistorySize);
+    }
+    
+    public void addRoute(String sourceTopic, String targetTopic) {
+        routingTable.computeIfAbsent(sourceTopic, k -> new CopyOnWriteArrayList<>())
+                   .add(targetTopic);
+    }
+    
+    public void removeRoute(String sourceTopic, String targetTopic) {
+        List<String> targets = routingTable.get(sourceTopic);
+        if (targets != null) {
+            targets.remove(targetTopic);
+        }
+    }
+    
+    public void start() {
+        queue.subscribe("system", this::handleSystemMessage);
+    }
+    
+    private void handleSystemMessage(Message message) {
+        String sourceTopic = extractSourceTopic(message);
+        List<String> targetTopics = routingTable.get(sourceTopic);
+        if (targetTopics != null) {
+            for (String targetTopic : targetTopics) {
+                queue.publish(createRoutedMessage(message, targetTopic));
+            }
+        }
+    }
+    
+    private Message createRoutedMessage(Message original, String targetTopic) {
+        // 라우팅된 메시지 생성 로직
+        return original;
+    }
+    
+    private String extractSourceTopic(Message message) {
+        // 소스 토픽 추출 로직
+        return "default";
+    }
+} 

@@ -1,0 +1,37 @@
+[기능] Code Explanation (코드 설명)
+[길이] Medium (중간 길이)
+[복잡도] Advanced (고급)
+[설명] 복잡한 비동기 처리 코드의 설명
+
+다음 비동기 작업 큐의 동작 방식과 잠재적인 문제점을 설명해줘:
+```java
+public class AsyncTaskQueue {
+    private final BlockingQueue<Task> queue = new LinkedBlockingQueue<>();
+    private final ExecutorService executor = Executors.newFixedThreadPool(5);
+    private final Map<String, CompletableFuture<Result>> taskFutures = new ConcurrentHashMap<>();
+    
+    public CompletableFuture<Result> submitTask(Task task) {
+        CompletableFuture<Result> future = new CompletableFuture<>();
+        taskFutures.put(task.getId(), future);
+        
+        executor.submit(() -> {
+            try {
+                Result result = processTask(task);
+                future.complete(result);
+            } catch (Exception e) {
+                future.completeExceptionally(e);
+            } finally {
+                taskFutures.remove(task.getId());
+            }
+        });
+        
+        return future;
+    }
+    
+    public void cancelTask(String taskId) {
+        CompletableFuture<Result> future = taskFutures.get(taskId);
+        if (future != null) {
+            future.cancel(true);
+        }
+    }
+} 

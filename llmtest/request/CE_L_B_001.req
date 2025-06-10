@@ -1,0 +1,49 @@
+[기능] Code Explanation (코드 설명)
+[길이] Long (긴 요청)
+[복잡도] Basic (기본)
+[설명] 간단한 쇼핑몰 시스템의 코드 설명
+
+다음 쇼핑몰 시스템의 각 클래스와 메소드가 어떤 역할을 하는지 설명해줘:
+```java
+public class Product {
+    private String id;
+    private String name;
+    private double price;
+    private int stock;
+    
+    // getters and setters
+}
+
+public class Cart {
+    private List<Product> items = new ArrayList<>();
+    
+    public void addItem(Product product) {
+        items.add(product);
+    }
+    
+    public void removeItem(Product product) {
+        items.remove(product);
+    }
+    
+    public double getTotal() {
+        return items.stream()
+                   .mapToDouble(Product::getPrice)
+                   .sum();
+    }
+}
+
+public class Order {
+    private String id;
+    private List<Product> items;
+    private double total;
+    private String status;
+    
+    public void process() {
+        // 주문 처리 로직
+    }
+    
+    public void cancel() {
+        // 주문 취소 로직
+    }
+}
+``` 

@@ -1,0 +1,7 @@
+[기능] Code Generation (코드 생성)
+[길이] Short (짧은 요청)
+[복잡도] Basic (기본)
+[설명] 간단한 유틸리티 메소드 생성
+
+String을 int로 변환하는 유틸리티 메소드를 만들어줘. 
+메소드 이름은 parseInteger이고, 변환에 실패하면 IllegalArgumentException을 발생시켜줘. 

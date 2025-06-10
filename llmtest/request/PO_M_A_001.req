@@ -1,0 +1,94 @@
+[기능] Performance Optimization (성능 최적화)
+[길이] Medium (중간 요청)
+[복잡도] Advanced (고급)
+[설명] 비동기 작업 큐 시스템의 성능 최적화
+
+다음 비동기 작업 큐 시스템의 성능을 최적화해줘:
+```java
+public class AsyncTaskQueue {
+    private final ExecutorService executorService;
+    private final Map<String, Task> tasks = new ConcurrentHashMap<>();
+    private final Object lock = new Object();
+    
+    public AsyncTaskQueue(int threadPoolSize) {
+        this.executorService = Executors.newFixedThreadPool(threadPoolSize);
+    }
+    
+    public void submitTask(Task task) {
+        synchronized (lock) {
+            if (tasks.containsKey(task.getId())) {
+                throw new IllegalStateException("Task already exists");
+            }
+            tasks.put(task.getId(), task);
+            executorService.submit(() -> {
+                try {
+                    task.execute();
+                    tasks.remove(task.getId());
+                } catch (Exception e) {
+                    task.setError(e);
+                    tasks.remove(task.getId());
+                }
+            });
+        }
+    }
+    
+    public void cancelTask(String taskId) {
+        synchronized (lock) {
+            Task task = tasks.get(taskId);
+            if (task != null) {
+                task.cancel();
+                tasks.remove(taskId);
+            }
+        }
+    }
+    
+    public boolean isTaskRunning(String taskId) {
+        return tasks.containsKey(taskId);
+    }
+    
+    public void shutdown() {
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+}
+
+public abstract class Task {
+    private final String id;
+    private volatile boolean cancelled;
+    private Exception error;
+    
+    public Task(String id) {
+        this.id = id;
+        this.cancelled = false;
+    }
+    
+    public abstract void execute() throws Exception;
+    
+    public void cancel() {
+        this.cancelled = true;
+    }
+    
+    public boolean isCancelled() {
+        return cancelled;
+    }
+    
+    public void setError(Exception error) {
+        this.error = error;
+    }
+    
+    public Exception getError() {
+        return error;
+    }
+    
+    public String getId() {
+        return id;
+    }
+}
+``` 

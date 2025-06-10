@@ -1,0 +1,63 @@
+[기능] Code Inspection (코드 검사)
+[길이] Medium (중간 요청)
+[복잡도] Basic (기본)
+[설명] 기본적인 CRUD 작업을 수행하는 서비스 클래스의 코드 품질 검사
+
+다음 UserService 클래스의 코드 품질을 검사하고 개선점을 제시해줘:
+```java
+public class UserService {
+    private final Map<String, User> users = new HashMap<>();
+    
+    public User createUser(String id, String name, String email) {
+        if (users.containsKey(id)) {
+            throw new IllegalArgumentException("User already exists");
+        }
+        User user = new User(id, name, email);
+        users.put(id, user);
+        return user;
+    }
+    
+    public User getUser(String id) {
+        User user = users.get(id);
+        if (user == null) {
+            throw new IllegalArgumentException("User not found");
+        }
+        return user;
+    }
+    
+    public User updateUser(String id, String name, String email) {
+        User user = getUser(id);
+        user.setName(name);
+        user.setEmail(email);
+        return user;
+    }
+    
+    public void deleteUser(String id) {
+        if (!users.containsKey(id)) {
+            throw new IllegalArgumentException("User not found");
+        }
+        users.remove(id);
+    }
+    
+    public List<User> searchUsers(String keyword) {
+        return users.values().stream()
+            .filter(user -> user.getName().contains(keyword) || 
+                          user.getEmail().contains(keyword))
+            .collect(Collectors.toList());
+    }
+}
+
+public class User {
+    private String id;
+    private String name;
+    private String email;
+    
+    public User(String id, String name, String email) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+    }
+    
+    // Getters and setters
+}
+``` 

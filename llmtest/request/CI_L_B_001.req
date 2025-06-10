@@ -1,0 +1,113 @@
+[기능] Code Inspection (코드 검사)
+[길이] Long (긴 요청)
+[복잡도] Basic (기본)
+[설명] 간단한 쇼핑몰 시스템의 코드 품질 검사
+
+다음 쇼핑몰 시스템의 코드 품질을 검사하고 개선점을 제시해줘:
+```java
+public class Product {
+    private String id;
+    private String name;
+    private double price;
+    private int stock;
+    
+    public Product(String id, String name, double price, int stock) {
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.stock = stock;
+    }
+    
+    public void updateStock(int quantity) {
+        if (stock + quantity < 0) {
+            throw new IllegalStateException("Insufficient stock");
+        }
+        stock += quantity;
+    }
+    
+    // Getters and setters
+}
+
+public class Cart {
+    private final Map<String, Integer> items = new HashMap<>();
+    
+    public void addItem(String productId, int quantity) {
+        items.merge(productId, quantity, Integer::sum);
+    }
+    
+    public void removeItem(String productId) {
+        items.remove(productId);
+    }
+    
+    public void updateQuantity(String productId, int quantity) {
+        if (quantity <= 0) {
+            items.remove(productId);
+        } else {
+            items.put(productId, quantity);
+        }
+    }
+    
+    public Map<String, Integer> getItems() {
+        return new HashMap<>(items);
+    }
+}
+
+public class Order {
+    private String id;
+    private String userId;
+    private List<OrderItem> items;
+    private double totalAmount;
+    private OrderStatus status;
+    
+    public Order(String id, String userId) {
+        this.id = id;
+        this.userId = userId;
+        this.items = new ArrayList<>();
+        this.status = OrderStatus.PENDING;
+    }
+    
+    public void addItem(Product product, int quantity) {
+        items.add(new OrderItem(product, quantity));
+        totalAmount += product.getPrice() * quantity;
+    }
+    
+    public void process() {
+        if (status != OrderStatus.PENDING) {
+            throw new IllegalStateException("Order cannot be processed");
+        }
+        status = OrderStatus.PROCESSING;
+    }
+    
+    public void complete() {
+        if (status != OrderStatus.PROCESSING) {
+            throw new IllegalStateException("Order cannot be completed");
+        }
+        status = OrderStatus.COMPLETED;
+    }
+    
+    public void cancel() {
+        if (status == OrderStatus.COMPLETED) {
+            throw new IllegalStateException("Completed order cannot be cancelled");
+        }
+        status = OrderStatus.CANCELLED;
+    }
+    
+    // Getters
+}
+
+public class OrderItem {
+    private Product product;
+    private int quantity;
+    
+    public OrderItem(Product product, int quantity) {
+        this.product = product;
+        this.quantity = quantity;
+    }
+    
+    // Getters
+}
+
+public enum OrderStatus {
+    PENDING, PROCESSING, COMPLETED, CANCELLED
+}
+``` 

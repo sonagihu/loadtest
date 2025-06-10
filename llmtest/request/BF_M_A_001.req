@@ -1,0 +1,141 @@
+[기능] Bug Fixing (버그 수정)
+[길이] Medium (중간 요청)
+[복잡도] Advanced (고급)
+[설명] 비동기 작업 큐 시스템의 버그 수정
+
+다음 비동기 작업 큐 시스템의 버그를 찾아 수정해줘:
+```java
+public interface Task {
+    String getId();
+    void execute() throws Exception;
+}
+
+public class AsyncTaskQueue {
+    private ExecutorService executorService;
+    private Map<String, Future<?>> runningTasks;
+    private Map<String, Task> taskQueue;
+    private Object lock;
+    
+    public AsyncTaskQueue() {
+        this.executorService = Executors.newFixedThreadPool(5);
+        this.runningTasks = new ConcurrentHashMap<>();
+        this.taskQueue = new ConcurrentHashMap<>();
+        this.lock = new Object();
+    }
+    
+    public void submitTask(Task task) {
+        synchronized (lock) {
+            if (taskQueue.containsKey(task.getId())) {
+                throw new IllegalArgumentException("이미 존재하는 작업 ID입니다.");
+            }
+            
+            taskQueue.put(task.getId(), task);
+            Future<?> future = executorService.submit(() -> {
+                try {
+                    task.execute();
+                } catch (Exception e) {
+                    System.err.println("Task execution failed: " + e.getMessage());
+                } finally {
+                    runningTasks.remove(task.getId());
+                    taskQueue.remove(task.getId());
+                }
+            });
+            
+            runningTasks.put(task.getId(), future);
+        }
+    }
+    
+    public void cancelTask(String taskId) {
+        synchronized (lock) {
+            Future<?> future = runningTasks.get(taskId);
+            if (future != null) {
+                future.cancel(true);
+                runningTasks.remove(taskId);
+                taskQueue.remove(taskId);
+            }
+        }
+    }
+    
+    public boolean isTaskRunning(String taskId) {
+        synchronized (lock) {
+            Future<?> future = runningTasks.get(taskId);
+            return future != null && !future.isDone();
+        }
+    }
+    
+    public void shutdown() {
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+}
+
+public class SimpleTask implements Task {
+    private String id;
+    private String name;
+    private long duration;
+    
+    public SimpleTask(String id, String name, long duration) {
+        this.id = id;
+        this.name = name;
+        this.duration = duration;
+    }
+    
+    @Override
+    public String getId() {
+        return id;
+    }
+    
+    @Override
+    public void execute() throws Exception {
+        System.out.println("Executing task: " + name);
+        Thread.sleep(duration);
+        System.out.println("Task completed: " + name);
+    }
+}
+
+public class TaskMonitor {
+    private AsyncTaskQueue taskQueue;
+    private ScheduledExecutorService monitorExecutor;
+    
+    public TaskMonitor(AsyncTaskQueue taskQueue) {
+        this.taskQueue = taskQueue;
+        this.monitorExecutor = Executors.newSingleThreadScheduledExecutor();
+    }
+    
+    public void startMonitoring() {
+        monitorExecutor.scheduleAtFixedRate(() -> {
+            System.out.println("Task Queue Status:");
+            System.out.println("Running tasks: " + getRunningTasks());
+            System.out.println("Queued tasks: " + getQueuedTasks());
+        }, 0, 5, TimeUnit.SECONDS);
+    }
+    
+    private List<String> getRunningTasks() {
+        // 실행 중인 작업 목록 반환
+        return new ArrayList<>();
+    }
+    
+    private List<String> getQueuedTasks() {
+        // 대기 중인 작업 목록 반환
+        return new ArrayList<>();
+    }
+    
+    public void stopMonitoring() {
+        monitorExecutor.shutdown();
+        try {
+            if (!monitorExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+                monitorExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            monitorExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+} 

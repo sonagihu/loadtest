@@ -1,0 +1,15 @@
+[기능] Code Optimization (코드 최적화)
+[길이] Short (짧은 요청)
+[복잡도] Basic (기본)
+[설명] 간단한 유틸리티 메소드의 성능 최적화
+
+다음 유틸리티 메소드의 성능을 최적화해줘:
+```java
+public static int calculateSum(int[] numbers) {
+    int sum = 0;
+    for (int i = 0; i <= numbers.length; i++) {
+        sum += numbers[i];
+    }
+    return sum;
+}
+``` 

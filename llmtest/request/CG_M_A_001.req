@@ -1,0 +1,9 @@
+[기능] Code Generation (코드 생성)
+[길이] Medium (중간 길이)
+[복잡도] Advanced (고급)
+[설명] 비동기 작업 처리를 위한 작업 큐 시스템 구현
+
+AsyncTaskQueue 클래스를 구현해줘.
+작업은 우선순위에 따라 처리되고, 
+작업 취소와 타임아웃 처리가 가능해야 해.
+CompletableFuture를 사용해서 비동기 처리를 구현해줘. 

@@ -1,0 +1,30 @@
+[기능] Code Explanation (코드 설명)
+[길이] Short (짧은 요청)
+[복잡도] Advanced (고급)
+[설명] 복잡한 동시성 처리 코드의 설명
+
+다음 코드의 동작 방식과 잠재적인 문제점을 설명해줘:
+```java
+public class ConcurrentCache<K,V> {
+    private final Map<K,V> cache = new ConcurrentHashMap<>();
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    
+    public V get(K key) {
+        lock.readLock().lock();
+        try {
+            return cache.get(key);
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+    
+    public void put(K key, V value) {
+        lock.writeLock().lock();
+        try {
+            cache.put(key, value);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+}
+``` 

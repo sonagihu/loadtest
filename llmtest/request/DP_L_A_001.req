@@ -1,0 +1,251 @@
+[기능] Design Pattern (디자인 패턴)
+[길이] Long (긴 요청)
+[복잡도] Advanced (고급)
+[설명] 방문자 패턴을 사용한 문서 처리 시스템 구현
+
+다음 방문자 패턴을 사용한 문서 처리 시스템을 구현해줘:
+```java
+public interface DocumentElement {
+    void accept(DocumentVisitor visitor);
+}
+
+public interface DocumentVisitor {
+    void visit(TextElement element);
+    void visit(ImageElement element);
+    void visit(TableElement element);
+    void visit(ParagraphElement element);
+}
+
+public class TextElement implements DocumentElement {
+    private String text;
+    private String font;
+    private int size;
+    
+    public TextElement(String text, String font, int size) {
+        this.text = text;
+        this.font = font;
+        this.size = size;
+    }
+    
+    @Override
+    public void accept(DocumentVisitor visitor) {
+        visitor.visit(this);
+    }
+    
+    public String getText() {
+        return text;
+    }
+    
+    public String getFont() {
+        return font;
+    }
+    
+    public int getSize() {
+        return size;
+    }
+}
+
+public class ImageElement implements DocumentElement {
+    private String source;
+    private int width;
+    private int height;
+    
+    public ImageElement(String source, int width, int height) {
+        this.source = source;
+        this.width = width;
+        this.height = height;
+    }
+    
+    @Override
+    public void accept(DocumentVisitor visitor) {
+        visitor.visit(this);
+    }
+    
+    public String getSource() {
+        return source;
+    }
+    
+    public int getWidth() {
+        return width;
+    }
+    
+    public int getHeight() {
+        return height;
+    }
+}
+
+public class TableElement implements DocumentElement {
+    private List<List<String>> data;
+    private int rows;
+    private int columns;
+    
+    public TableElement(int rows, int columns) {
+        this.rows = rows;
+        this.columns = columns;
+        this.data = new ArrayList<>();
+        for (int i = 0; i < rows; i++) {
+            List<String> row = new ArrayList<>();
+            for (int j = 0; j < columns; j++) {
+                row.add("");
+            }
+            data.add(row);
+        }
+    }
+    
+    @Override
+    public void accept(DocumentVisitor visitor) {
+        visitor.visit(this);
+    }
+    
+    public void setCell(int row, int column, String value) {
+        if (row >= 0 && row < rows && column >= 0 && column < columns) {
+            data.get(row).set(column, value);
+        }
+    }
+    
+    public String getCell(int row, int column) {
+        if (row >= 0 && row < rows && column >= 0 && column < columns) {
+            return data.get(row).get(column);
+        }
+        return "";
+    }
+}
+
+public class ParagraphElement implements DocumentElement {
+    private List<TextElement> elements;
+    
+    public ParagraphElement() {
+        this.elements = new ArrayList<>();
+    }
+    
+    @Override
+    public void accept(DocumentVisitor visitor) {
+        visitor.visit(this);
+    }
+    
+    public void addElement(TextElement element) {
+        elements.add(element);
+    }
+    
+    public List<TextElement> getElements() {
+        return elements;
+    }
+}
+
+public class Document {
+    private List<DocumentElement> elements;
+    
+    public Document() {
+        this.elements = new ArrayList<>();
+    }
+    
+    public void addElement(DocumentElement element) {
+        elements.add(element);
+    }
+    
+    public void accept(DocumentVisitor visitor) {
+        for (DocumentElement element : elements) {
+            element.accept(visitor);
+        }
+    }
+}
+
+public class HTMLExportVisitor implements DocumentVisitor {
+    private StringBuilder html;
+    
+    public HTMLExportVisitor() {
+        this.html = new StringBuilder();
+        html.append("<!DOCTYPE html>\n<html>\n<body>\n");
+    }
+    
+    @Override
+    public void visit(TextElement element) {
+        html.append(String.format("<span style='font-family: %s; font-size: %dpx;'>%s</span>",
+                                element.getFont(), element.getSize(), element.getText()));
+    }
+    
+    @Override
+    public void visit(ImageElement element) {
+        html.append(String.format("<img src='%s' width='%d' height='%d'/>",
+                                element.getSource(), element.getWidth(), element.getHeight()));
+    }
+    
+    @Override
+    public void visit(TableElement element) {
+        html.append("<table border='1'>\n");
+        for (int i = 0; i < element.getRows(); i++) {
+            html.append("<tr>\n");
+            for (int j = 0; j < element.getColumns(); j++) {
+                html.append(String.format("<td>%s</td>\n", element.getCell(i, j)));
+            }
+            html.append("</tr>\n");
+        }
+        html.append("</table>\n");
+    }
+    
+    @Override
+    public void visit(ParagraphElement element) {
+        html.append("<p>\n");
+        for (TextElement textElement : element.getElements()) {
+            visit(textElement);
+        }
+        html.append("</p>\n");
+    }
+    
+    public String getHTML() {
+        return html.toString() + "</body>\n</html>";
+    }
+}
+
+public class PDFExportVisitor implements DocumentVisitor {
+    private StringBuilder pdf;
+    
+    public PDFExportVisitor() {
+        this.pdf = new StringBuilder();
+        pdf.append("%PDF-1.4\n");
+    }
+    
+    @Override
+    public void visit(TextElement element) {
+        pdf.append(String.format("BT\n/F%d %d Tf\n(%s) Tj\nET\n",
+                               getFontNumber(element.getFont()),
+                               element.getSize(),
+                               element.getText()));
+    }
+    
+    @Override
+    public void visit(ImageElement element) {
+        pdf.append(String.format("q\n%d 0 0 %d %d %d cm\n/I%d Do\nQ\n",
+                               element.getWidth(),
+                               element.getHeight(),
+                               0, 0,
+                               getImageNumber(element.getSource())));
+    }
+    
+    @Override
+    public void visit(TableElement element) {
+        // PDF 테이블 생성 로직
+    }
+    
+    @Override
+    public void visit(ParagraphElement element) {
+        for (TextElement textElement : element.getElements()) {
+            visit(textElement);
+        }
+    }
+    
+    private int getFontNumber(String font) {
+        // 폰트 매핑 로직
+        return 1;
+    }
+    
+    private int getImageNumber(String source) {
+        // 이미지 매핑 로직
+        return 1;
+    }
+    
+    public String getPDF() {
+        return pdf.toString();
+    }
+}
+``` 

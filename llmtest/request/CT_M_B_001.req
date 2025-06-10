@@ -1,0 +1,65 @@
+[기능] Code Testing (코드 테스트)
+[길이] Medium (중간 요청)
+[복잡도] Basic (기본)
+[설명] 기본적인 CRUD 작업을 수행하는 서비스 클래스의 단위 테스트 작성
+
+다음 UserService 클래스에 대한 단위 테스트를 작성해줘:
+```java
+public class UserService {
+    private final Map<String, User> users = new HashMap<>();
+    
+    public void createUser(String id, String name, String email) {
+        if (users.containsKey(id)) {
+            throw new IllegalArgumentException("User already exists");
+        }
+        User user = new User(id, name, email);
+        users.put(id, user);
+    }
+    
+    public User getUser(String id) {
+        User user = users.get(id);
+        if (user == null) {
+            throw new IllegalArgumentException("User not found");
+        }
+        return user;
+    }
+    
+    public void updateUser(String id, String name, String email) {
+        User user = getUser(id);
+        user.setName(name);
+        user.setEmail(email);
+    }
+    
+    public void deleteUser(String id) {
+        if (!users.containsKey(id)) {
+            throw new IllegalArgumentException("User not found");
+        }
+        users.remove(id);
+    }
+    
+    public List<User> getAllUsers() {
+        return new ArrayList<>(users.values());
+    }
+    
+    public List<User> searchUsers(String keyword) {
+        return users.values().stream()
+            .filter(user -> user.getName().contains(keyword) || 
+                          user.getEmail().contains(keyword))
+            .collect(Collectors.toList());
+    }
+}
+
+public class User {
+    private String id;
+    private String name;
+    private String email;
+    
+    public User(String id, String name, String email) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+    }
+    
+    // Getters and setters
+}
+``` 

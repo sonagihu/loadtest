@@ -1,0 +1,119 @@
+기능: Bug Fixing (버그 수정)
+길이: Long (긴 요청)
+복잡도: Basic (기본)
+
+다음 쇼핑몰 시스템의 버그를 찾아 수정해주세요:
+
+```java
+public class Product {
+    private String id;
+    private String name;
+    private double price;
+    private int stock;
+    
+    public Product(String id, String name, double price, int stock) {
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.stock = stock;
+    }
+    
+    // Getters and setters
+}
+
+public class Cart {
+    private List<CartItem> items = new ArrayList<>();
+    
+    public void addItem(Product product, int quantity) {
+        items.add(new CartItem(product, quantity));
+    }
+    
+    public void removeItem(String productId) {
+        items.removeIf(item -> item.getProduct().getId().equals(productId));
+    }
+    
+    public double getTotal() {
+        return items.stream()
+            .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())
+            .sum();
+    }
+}
+
+public class CartItem {
+    private Product product;
+    private int quantity;
+    
+    public CartItem(Product product, int quantity) {
+        this.product = product;
+        this.quantity = quantity;
+    }
+    
+    // Getters and setters
+}
+
+public class Order {
+    private String id;
+    private List<OrderItem> items;
+    private double total;
+    private OrderStatus status;
+    
+    public Order(String id, List<OrderItem> items) {
+        this.id = id;
+        this.items = items;
+        this.total = calculateTotal();
+        this.status = OrderStatus.PENDING;
+    }
+    
+    private double calculateTotal() {
+        return items.stream()
+            .mapToDouble(item -> item.getPrice() * item.getQuantity())
+            .sum();
+    }
+    
+    public void process() {
+        // 재고 확인 및 차감
+        for (OrderItem item : items) {
+            Product product = item.getProduct();
+            if (product.getStock() < item.getQuantity()) {
+                throw new IllegalStateException("재고 부족");
+            }
+            product.setStock(product.getStock() - item.getQuantity());
+        }
+        status = OrderStatus.PROCESSING;
+    }
+    
+    public void complete() {
+        status = OrderStatus.COMPLETED;
+    }
+    
+    public void cancel() {
+        // 재고 복구
+        for (OrderItem item : items) {
+            Product product = item.getProduct();
+            product.setStock(product.getStock() + item.getQuantity());
+        }
+        status = OrderStatus.CANCELLED;
+    }
+}
+
+public class OrderItem {
+    private Product product;
+    private int quantity;
+    private double price;
+    
+    public OrderItem(Product product, int quantity) {
+        this.product = product;
+        this.quantity = quantity;
+        this.price = product.getPrice();
+    }
+    
+    // Getters and setters
+}
+
+public enum OrderStatus {
+    PENDING,
+    PROCESSING,
+    COMPLETED,
+    CANCELLED
+}
+``` 

@@ -1,0 +1,8 @@
+[기능] Code Generation (코드 생성)
+[길이] Medium (중간 길이)
+[복잡도] Basic (기본)
+[설명] 기본적인 CRUD 기능을 가진 서비스 클래스 생성
+
+UserService 클래스를 만들어줘.
+사용자 정보(id, name, email)를 관리하는 기본적인 CRUD 기능이 필요해.
+각 메소드에 적절한 예외 처리를 포함해줘. 

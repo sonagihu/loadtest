@@ -1,0 +1,8 @@
+[기능] Code Generation (코드 생성)
+[길이] Short (짧은 요청)
+[복잡도] Advanced (고급)
+[설명] 스레드 안전한 캐시 구현
+
+ThreadSafeCache 클래스를 구현해줘.
+LRU(Least Recently Used) 알고리즘을 사용하고, 
+동시성 처리를 위해 ReadWriteLock을 사용해줘. 

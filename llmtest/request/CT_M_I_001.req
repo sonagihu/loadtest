@@ -1,0 +1,75 @@
+[기능] Code Testing (코드 테스트)
+[길이] Medium (중간 요청)
+[복잡도] Intermediate (중간)
+[설명] 옵저버 패턴이 적용된 이벤트 처리 시스템의 단위 테스트 작성
+
+다음 이벤트 처리 시스템에 대한 단위 테스트를 작성해줘:
+```java
+public interface EventListener {
+    void onEvent(Event event);
+}
+
+public class EventManager {
+    private final List<EventListener> listeners = new CopyOnWriteArrayList<>();
+    
+    public void addEventListener(EventListener listener) {
+        listeners.add(listener);
+    }
+    
+    public void removeEventListener(EventListener listener) {
+        listeners.remove(listener);
+    }
+    
+    public void notifyListeners(Event event) {
+        for (EventListener listener : listeners) {
+            try {
+                listener.onEvent(event);
+            } catch (Exception e) {
+                handleListenerError(listener, event, e);
+            }
+        }
+    }
+    
+    private void handleListenerError(EventListener listener, Event event, Exception e) {
+        // 에러 처리 로직
+    }
+}
+
+public class LoggingEventListener implements EventListener {
+    private final Logger logger = LoggerFactory.getLogger(LoggingEventListener.class);
+    
+    @Override
+    public void onEvent(Event event) {
+        logger.info("Event received: {}", event);
+    }
+}
+
+public class EmailEventListener implements EventListener {
+    private final EmailService emailService;
+    
+    public EmailEventListener(EmailService emailService) {
+        this.emailService = emailService;
+    }
+    
+    @Override
+    public void onEvent(Event event) {
+        if (event.getType().equals("NOTIFICATION")) {
+            emailService.sendEmail(event.getData());
+        }
+    }
+}
+
+public class Event {
+    private final String type;
+    private final String data;
+    private final long timestamp;
+    
+    public Event(String type, String data) {
+        this.type = type;
+        this.data = data;
+        this.timestamp = System.currentTimeMillis();
+    }
+    
+    // Getters
+}
+``` 

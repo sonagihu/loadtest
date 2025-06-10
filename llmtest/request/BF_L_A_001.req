@@ -1,0 +1,236 @@
+[기능] Bug Fixing (버그 수정)
+[길이] Long (긴 요청)
+[복잡도] Advanced (고급)
+[설명] 분산 메시징 큐 시스템의 버그 수정
+
+다음 분산 메시징 큐 시스템의 버그를 찾아 수정해줘:
+```java
+public class Message {
+    private String id;
+    private String content;
+    private long timestamp;
+    private MessageStatus status;
+    
+    public Message(String id, String content) {
+        this.id = id;
+        this.content = content;
+        this.timestamp = System.currentTimeMillis();
+        this.status = MessageStatus.PENDING;
+    }
+    
+    public void setStatus(MessageStatus status) {
+        this.status = status;
+    }
+    
+    public String getId() {
+        return id;
+    }
+    
+    public String getContent() {
+        return content;
+    }
+    
+    public long getTimestamp() {
+        return timestamp;
+    }
+    
+    public MessageStatus getStatus() {
+        return status;
+    }
+}
+
+public enum MessageStatus {
+    PENDING, PROCESSING, COMPLETED, FAILED
+}
+
+public interface MessageQueue {
+    void publish(Message message) throws QueueException;
+    Message consume() throws QueueException;
+    void acknowledge(String messageId) throws QueueException;
+    void reject(String messageId) throws QueueException;
+}
+
+public class DistributedMessageQueue implements MessageQueue {
+    private final Map<String, Queue<Message>> queues;
+    private final Map<String, Message> processingMessages;
+    private final Object lock;
+    
+    public DistributedMessageQueue() {
+        this.queues = new ConcurrentHashMap<>();
+        this.processingMessages = new ConcurrentHashMap<>();
+        this.lock = new Object();
+    }
+    
+    @Override
+    public void publish(Message message) throws QueueException {
+        synchronized (lock) {
+            String queueName = getQueueName(message);
+            Queue<Message> queue = queues.computeIfAbsent(queueName, k -> new ConcurrentLinkedQueue<>());
+            queue.offer(message);
+        }
+    }
+    
+    @Override
+    public Message consume() throws QueueException {
+        synchronized (lock) {
+            for (Queue<Message> queue : queues.values()) {
+                Message message = queue.poll();
+                if (message != null) {
+                    message.setStatus(MessageStatus.PROCESSING);
+                    processingMessages.put(message.getId(), message);
+                    return message;
+                }
+            }
+            return null;
+        }
+    }
+    
+    @Override
+    public void acknowledge(String messageId) throws QueueException {
+        synchronized (lock) {
+            Message message = processingMessages.remove(messageId);
+            if (message != null) {
+                message.setStatus(MessageStatus.COMPLETED);
+            }
+        }
+    }
+    
+    @Override
+    public void reject(String messageId) throws QueueException {
+        synchronized (lock) {
+            Message message = processingMessages.remove(messageId);
+            if (message != null) {
+                message.setStatus(MessageStatus.FAILED);
+                String queueName = getQueueName(message);
+                Queue<Message> queue = queues.get(queueName);
+                if (queue != null) {
+                    queue.offer(message);
+                }
+            }
+        }
+    }
+    
+    private String getQueueName(Message message) {
+        return "queue-" + Math.abs(message.getId().hashCode() % 3);
+    }
+}
+
+public class QueueException extends Exception {
+    public QueueException(String message) {
+        super(message);
+    }
+    
+    public QueueException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+
+public class MessageProcessor {
+    private final MessageQueue queue;
+    private final ExecutorService executorService;
+    private volatile boolean running;
+    
+    public MessageProcessor(MessageQueue queue) {
+        this.queue = queue;
+        this.executorService = Executors.newFixedThreadPool(3);
+        this.running = true;
+    }
+    
+    public void start() {
+        for (int i = 0; i < 3; i++) {
+            executorService.submit(this::processMessages);
+        }
+    }
+    
+    public void stop() {
+        running = false;
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+    
+    private void processMessages() {
+        while (running) {
+            try {
+                Message message = queue.consume();
+                if (message != null) {
+                    processMessage(message);
+                } else {
+                    Thread.sleep(100);
+                }
+            } catch (QueueException | InterruptedException e) {
+                // 에러 처리 로직
+            }
+        }
+    }
+    
+    private void processMessage(Message message) {
+        try {
+            // 메시지 처리 로직
+            queue.acknowledge(message.getId());
+        } catch (Exception e) {
+            try {
+                queue.reject(message.getId());
+            } catch (QueueException ex) {
+                // 에러 처리 로직
+            }
+        }
+    }
+}
+
+public class MessageConsumer {
+    private final MessageQueue queue;
+    private final MessageHandler handler;
+    private final ExecutorService executorService;
+    private volatile boolean running;
+    
+    public MessageConsumer(MessageQueue queue, MessageHandler handler) {
+        this.queue = queue;
+        this.handler = handler;
+        this.executorService = Executors.newSingleThreadExecutor();
+        this.running = true;
+    }
+    
+    public void start() {
+        executorService.submit(this::consumeMessages);
+    }
+    
+    public void stop() {
+        running = false;
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+    
+    private void consumeMessages() {
+        while (running) {
+            try {
+                Message message = queue.consume();
+                if (message != null) {
+                    handler.handleMessage(message);
+                    queue.acknowledge(message.getId());
+                } else {
+                    Thread.sleep(100);
+                }
+            } catch (QueueException | InterruptedException e) {
+                // 에러 처리 로직
+            }
+        }
+    }
+}
+
+public interface MessageHandler {
+    void handleMessage(Message message) throws Exception;
+} 

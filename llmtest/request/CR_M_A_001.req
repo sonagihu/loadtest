@@ -1,0 +1,99 @@
+[기능] Code Review (코드 리뷰)
+[길이] Medium (중간 요청)
+[복잡도] Advanced (고급)
+[설명] 비동기 작업 큐 시스템의 코드 리뷰
+
+다음 비동기 작업 큐 시스템에 대한 코드 리뷰를 작성해줘:
+```java
+public class AsyncTaskQueue {
+    private final ExecutorService executorService;
+    private final Map<String, Future<?>> runningTasks = new ConcurrentHashMap<>();
+    private final BlockingQueue<Task> taskQueue = new LinkedBlockingQueue<>();
+    private volatile boolean running = true;
+    
+    public AsyncTaskQueue(int threadPoolSize) {
+        this.executorService = Executors.newFixedThreadPool(threadPoolSize);
+        startTaskProcessor();
+    }
+    
+    private void startTaskProcessor() {
+        executorService.submit(() -> {
+            while (running) {
+                try {
+                    Task task = taskQueue.poll(100, TimeUnit.MILLISECONDS);
+                    if (task != null) {
+                        Future<?> future = executorService.submit(() -> {
+                            try {
+                                task.execute();
+                            } catch (Exception e) {
+                                task.onError(e);
+                            }
+                        });
+                        runningTasks.put(task.getId(), future);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        });
+    }
+    
+    public void submitTask(Task task) {
+        if (!running) {
+            throw new IllegalStateException("Task queue is shutdown");
+        }
+        taskQueue.offer(task);
+    }
+    
+    public void cancelTask(String taskId) {
+        Future<?> future = runningTasks.get(taskId);
+        if (future != null) {
+            future.cancel(true);
+            runningTasks.remove(taskId);
+        }
+    }
+    
+    public boolean isTaskRunning(String taskId) {
+        Future<?> future = runningTasks.get(taskId);
+        return future != null && !future.isDone();
+    }
+    
+    public void shutdown() {
+        running = false;
+        executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+}
+
+public abstract class Task {
+    private final String id;
+    private final long creationTime;
+    
+    protected Task() {
+        this.id = UUID.randomUUID().toString();
+        this.creationTime = System.currentTimeMillis();
+    }
+    
+    public abstract void execute() throws Exception;
+    
+    public void onError(Exception e) {
+        // 기본 에러 처리
+    }
+    
+    public String getId() {
+        return id;
+    }
+    
+    public long getCreationTime() {
+        return creationTime;
+    }
+}
+``` 

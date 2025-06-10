@@ -1,0 +1,39 @@
+[기능] Code Documentation (코드 문서화)
+[길이] Short (짧은 요청)
+[복잡도] Advanced (고급)
+[설명] 복잡한 동시성 처리가 포함된 클래스의 Javadoc 생성
+
+다음 스레드 안전한 캐시 클래스에 대한 Javadoc을 생성해줘:
+```java
+public class ThreadSafeCache<K,V> {
+    private final Map<K,V> cache;
+    private final ReadWriteLock lock;
+    private final int maxSize;
+    
+    public ThreadSafeCache(int maxSize) {
+        this.cache = new LinkedHashMap<>(maxSize, 0.75f, true);
+        this.lock = new ReentrantReadWriteLock();
+        this.maxSize = maxSize;
+    }
+    
+    public V get(K key) {
+        lock.readLock().lock();
+        try {
+            return cache.get(key);
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+    
+    public void put(K key, V value) {
+        lock.writeLock().lock();
+        try {
+            if (cache.size() >= maxSize) {
+                cache.remove(cache.keySet().iterator().next());
+            }
+            cache.put(key, value);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+} 

@@ -1,0 +1,36 @@
+[기능] Code Explanation (코드 설명)
+[길이] Medium (중간 길이)
+[복잡도] Intermediate (중간)
+[설명] 옵저버 패턴이 적용된 코드의 설명
+
+다음 이벤트 처리 시스템의 동작 방식을 설명해줘:
+```java
+public interface EventListener {
+    void onEvent(Event event);
+}
+
+public class EventManager {
+    private final List<EventListener> listeners = new ArrayList<>();
+    
+    public void addEventListener(EventListener listener) {
+        listeners.add(listener);
+    }
+    
+    public void removeEventListener(EventListener listener) {
+        listeners.remove(listener);
+    }
+    
+    public void notifyListeners(Event event) {
+        for (EventListener listener : listeners) {
+            listener.onEvent(event);
+        }
+    }
+}
+
+public class LoggingEventListener implements EventListener {
+    @Override
+    public void onEvent(Event event) {
+        System.out.println("Event received: " + event);
+    }
+}
+``` 

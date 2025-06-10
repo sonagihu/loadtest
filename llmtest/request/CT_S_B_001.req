@@ -1,0 +1,23 @@
+[기능] Code Testing (코드 테스트)
+[길이] Short (짧은 요청)
+[복잡도] Basic (기본)
+[설명] 간단한 유틸리티 메소드에 대한 단위 테스트 작성
+
+다음 StringUtils 클래스의 메소드들에 대한 단위 테스트를 작성해줘:
+```java
+public class StringUtils {
+    public static String reverse(String input) {
+        if (input == null) {
+            return null;
+        }
+        return new StringBuilder(input).reverse().toString();
+    }
+    
+    public static boolean isPalindrome(String input) {
+        if (input == null) {
+            return false;
+        }
+        String cleaned = input.toLowerCase().replaceAll("[^a-z0-9]", "");
+        return cleaned.equals(reverse(cleaned));
+    }
+} 

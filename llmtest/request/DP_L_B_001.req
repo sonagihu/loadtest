@@ -1,0 +1,140 @@
+[기능] Design Pattern (디자인 패턴)
+[길이] Long (긴 요청)
+[복잡도] Basic (기본)
+[설명] 템플릿 메소드 패턴을 사용한 보고서 생성 시스템 구현
+
+다음 템플릿 메소드 패턴을 사용한 보고서 생성 시스템을 구현해줘:
+```java
+public abstract class Report {
+    protected String title;
+    protected List<String> content;
+    
+    public Report(String title) {
+        this.title = title;
+        this.content = new ArrayList<>();
+    }
+    
+    public final void generateReport() {
+        createHeader();
+        createContent();
+        createFooter();
+        printReport();
+    }
+    
+    protected abstract void createHeader();
+    protected abstract void createContent();
+    protected abstract void createFooter();
+    
+    protected void printReport() {
+        System.out.println("=== " + title + " ===");
+        for (String line : content) {
+            System.out.println(line);
+        }
+    }
+}
+
+public class SalesReport extends Report {
+    private List<Sale> sales;
+    
+    public SalesReport(String title, List<Sale> sales) {
+        super(title);
+        this.sales = sales;
+    }
+    
+    @Override
+    protected void createHeader() {
+        content.add("판매 보고서");
+        content.add("생성일: " + new Date());
+        content.add("------------------------");
+    }
+    
+    @Override
+    protected void createContent() {
+        content.add("판매 내역:");
+        for (Sale sale : sales) {
+            content.add(String.format("- %s: %d원", sale.getProduct(), sale.getAmount()));
+        }
+        content.add("------------------------");
+        content.add("총 판매액: " + calculateTotal() + "원");
+    }
+    
+    @Override
+    protected void createFooter() {
+        content.add("------------------------");
+        content.add("보고서 끝");
+    }
+    
+    private int calculateTotal() {
+        return sales.stream()
+                   .mapToInt(Sale::getAmount)
+                   .sum();
+    }
+}
+
+public class InventoryReport extends Report {
+    private List<Product> products;
+    
+    public InventoryReport(String title, List<Product> products) {
+        super(title);
+        this.products = products;
+    }
+    
+    @Override
+    protected void createHeader() {
+        content.add("재고 보고서");
+        content.add("생성일: " + new Date());
+        content.add("------------------------");
+    }
+    
+    @Override
+    protected void createContent() {
+        content.add("재고 현황:");
+        for (Product product : products) {
+            content.add(String.format("- %s: %d개", product.getName(), product.getQuantity()));
+        }
+        content.add("------------------------");
+        content.add("총 제품 수: " + products.size() + "개");
+    }
+    
+    @Override
+    protected void createFooter() {
+        content.add("------------------------");
+        content.add("보고서 끝");
+    }
+}
+
+public class Sale {
+    private String product;
+    private int amount;
+    
+    public Sale(String product, int amount) {
+        this.product = product;
+        this.amount = amount;
+    }
+    
+    public String getProduct() {
+        return product;
+    }
+    
+    public int getAmount() {
+        return amount;
+    }
+}
+
+public class Product {
+    private String name;
+    private int quantity;
+    
+    public Product(String name, int quantity) {
+        this.name = name;
+        this.quantity = quantity;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public int getQuantity() {
+        return quantity;
+    }
+} 

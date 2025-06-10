@@ -1,0 +1,45 @@
+[기능] Performance Optimization (성능 최적화)
+[길이] Short (짧은 요청)
+[복잡도] Intermediate (중급)
+[설명] 싱글톤 패턴을 사용하는 데이터베이스 연결 클래스의 성능 최적화
+
+다음 DatabaseConnection 클래스의 성능을 최적화해줘:
+```java
+public class DatabaseConnection {
+    private static DatabaseConnection instance;
+    private Connection connection;
+    private boolean isConnected;
+    
+    private DatabaseConnection() {
+        this.isConnected = false;
+    }
+    
+    public static synchronized DatabaseConnection getInstance() {
+        if (instance == null) {
+            instance = new DatabaseConnection();
+        }
+        return instance;
+    }
+    
+    public void connect() throws SQLException {
+        if (!isConnected) {
+            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/testdb", "user", "password");
+            isConnected = true;
+        }
+    }
+    
+    public void disconnect() throws SQLException {
+        if (isConnected && connection != null) {
+            connection.close();
+            isConnected = false;
+        }
+    }
+    
+    public boolean isConnected() {
+        return isConnected;
+    }
+    
+    public Connection getConnection() {
+        return connection;
+    }
+} 

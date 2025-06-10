@@ -1,0 +1,196 @@
+기능: Performance Optimization (성능 최적화)
+길이: Long (긴 요청)
+복잡도: Advanced (고급)
+
+다음 분산 메시징 큐 시스템의 성능을 최적화해주세요:
+
+```java
+public class Message {
+    private final String id;
+    private final String topic;
+    private final byte[] payload;
+    private final long timestamp;
+    private final Map<String, String> headers;
+    
+    public Message(String id, String topic, byte[] payload, Map<String, String> headers) {
+        this.id = id;
+        this.topic = topic;
+        this.payload = payload;
+        this.timestamp = System.currentTimeMillis();
+        this.headers = headers;
+    }
+    
+    // Getters
+}
+
+public interface MessageHandler {
+    void handle(Message message) throws Exception;
+}
+
+public class MessageQueue {
+    private final Map<String, BlockingQueue<Message>> topicQueues;
+    private final Map<String, List<MessageHandler>> handlers;
+    private final ExecutorService executor;
+    private final int maxQueueSize;
+    private final AtomicBoolean running;
+    
+    public MessageQueue(int maxQueueSize, int threadPoolSize) {
+        this.topicQueues = new ConcurrentHashMap<>();
+        this.handlers = new ConcurrentHashMap<>();
+        this.executor = Executors.newFixedThreadPool(threadPoolSize);
+        this.maxQueueSize = maxQueueSize;
+        this.running = new AtomicBoolean(true);
+    }
+    
+    public void subscribe(String topic, MessageHandler handler) {
+        handlers.computeIfAbsent(topic, k -> new ArrayList<>()).add(handler);
+        topicQueues.computeIfAbsent(topic, k -> new LinkedBlockingQueue<>(maxQueueSize));
+    }
+    
+    public void publish(Message message) {
+        BlockingQueue<Message> queue = topicQueues.get(message.getTopic());
+        if (queue != null) {
+            try {
+                queue.put(message);
+                processMessage(message);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+    
+    private void processMessage(Message message) {
+        List<MessageHandler> messageHandlers = handlers.get(message.getTopic());
+        if (messageHandlers != null) {
+            for (MessageHandler handler : messageHandlers) {
+                executor.submit(() -> {
+                    try {
+                        handler.handle(message);
+                    } catch (Exception e) {
+                        System.err.println("Error processing message: " + e.getMessage());
+                    }
+                });
+            }
+        }
+    }
+    
+    public void shutdown() {
+        running.set(false);
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+        }
+    }
+}
+
+public class MessageBroker {
+    private final Map<String, MessageQueue> queues;
+    private final Map<String, List<String>> topicSubscriptions;
+    private final ExecutorService executor;
+    
+    public MessageBroker(int threadPoolSize) {
+        this.queues = new ConcurrentHashMap<>();
+        this.topicSubscriptions = new ConcurrentHashMap<>();
+        this.executor = Executors.newFixedThreadPool(threadPoolSize);
+    }
+    
+    public void createQueue(String queueName, int maxQueueSize) {
+        queues.put(queueName, new MessageQueue(maxQueueSize, 5));
+    }
+    
+    public void subscribe(String queueName, String topic, MessageHandler handler) {
+        MessageQueue queue = queues.get(queueName);
+        if (queue != null) {
+            queue.subscribe(topic, handler);
+            topicSubscriptions.computeIfAbsent(topic, k -> new ArrayList<>()).add(queueName);
+        }
+    }
+    
+    public void publish(Message message) {
+        List<String> subscribedQueues = topicSubscriptions.get(message.getTopic());
+        if (subscribedQueues != null) {
+            for (String queueName : subscribedQueues) {
+                MessageQueue queue = queues.get(queueName);
+                if (queue != null) {
+                    executor.submit(() -> queue.publish(message));
+                }
+            }
+        }
+    }
+    
+    public void shutdown() {
+        for (MessageQueue queue : queues.values()) {
+            queue.shutdown();
+        }
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+        }
+    }
+}
+
+public class MessageStore {
+    private final Map<String, List<Message>> messageHistory;
+    private final int maxHistorySize;
+    
+    public MessageStore(int maxHistorySize) {
+        this.messageHistory = new ConcurrentHashMap<>();
+        this.maxHistorySize = maxHistorySize;
+    }
+    
+    public void store(Message message) {
+        messageHistory.computeIfAbsent(message.getTopic(), k -> new ArrayList<>())
+            .add(message);
+        
+        // 히스토리 크기 제한
+        List<Message> history = messageHistory.get(message.getTopic());
+        if (history.size() > maxHistorySize) {
+            history.subList(0, history.size() - maxHistorySize).clear();
+        }
+    }
+    
+    public List<Message> getHistory(String topic) {
+        return new ArrayList<>(messageHistory.getOrDefault(topic, new ArrayList<>()));
+    }
+}
+
+public class MessageProcessor {
+    private final MessageBroker broker;
+    private final MessageStore store;
+    private final Map<String, AtomicLong> messageCounters;
+    
+    public MessageProcessor(int threadPoolSize, int maxHistorySize) {
+        this.broker = new MessageBroker(threadPoolSize);
+        this.store = new MessageStore(maxHistorySize);
+        this.messageCounters = new ConcurrentHashMap<>();
+    }
+    
+    public void processMessage(Message message) {
+        // 메시지 카운터 증가
+        messageCounters.computeIfAbsent(message.getTopic(), k -> new AtomicLong())
+            .incrementAndGet();
+        
+        // 메시지 저장
+        store.store(message);
+        
+        // 메시지 발행
+        broker.publish(message);
+    }
+    
+    public long getMessageCount(String topic) {
+        AtomicLong counter = messageCounters.get(topic);
+        return counter != null ? counter.get() : 0;
+    }
+    
+    public void shutdown() {
+        broker.shutdown();
+    }
+} 

@@ -1,0 +1,42 @@
+[기능] Code Optimization (코드 최적화)
+[길이] Short (짧은 요청)
+[복잡도] Intermediate (중간)
+[설명] 싱글톤 패턴 데이터베이스 연결 클래스의 성능 최적화
+
+다음 싱글톤 패턴 데이터베이스 연결 클래스의 성능을 최적화해줘:
+```java
+public class DatabaseConnection {
+    private static DatabaseConnection instance;
+    private Connection connection;
+    
+    private DatabaseConnection() {
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/mydb", "user", "password");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public static DatabaseConnection getInstance() {
+        if (instance == null) {
+            instance = new DatabaseConnection();
+        }
+        return instance;
+    }
+    
+    public Connection getConnection() {
+        return connection;
+    }
+    
+    public void close() {
+        try {
+            if (connection != null && !connection.isClosed()) {
+                connection.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+``` 

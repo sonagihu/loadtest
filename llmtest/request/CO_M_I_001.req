@@ -1,0 +1,91 @@
+[기능] Code Optimization (코드 최적화)
+[길이] Medium (중간 요청)
+[복잡도] Intermediate (중간)
+[설명] 옵저버 패턴을 사용한 이벤트 처리 시스템의 성능 최적화
+
+다음 옵저버 패턴을 사용한 이벤트 처리 시스템의 성능을 최적화해줘:
+```java
+public interface EventListener {
+    void onEvent(Event event);
+}
+
+public class Event {
+    private String type;
+    private Object data;
+    private long timestamp;
+    
+    public Event(String type, Object data) {
+        this.type = type;
+        this.data = data;
+        this.timestamp = System.currentTimeMillis();
+    }
+    
+    // Getters
+}
+
+public class EventManager {
+    private final List<EventListener> listeners = new ArrayList<>();
+    private final Map<String, List<EventListener>> typedListeners = new HashMap<>();
+    
+    public void addEventListener(EventListener listener) {
+        listeners.add(listener);
+    }
+    
+    public void addEventListener(String eventType, EventListener listener) {
+        typedListeners.computeIfAbsent(eventType, k -> new ArrayList<>()).add(listener);
+    }
+    
+    public void removeEventListener(EventListener listener) {
+        listeners.remove(listener);
+        for (List<EventListener> typeListeners : typedListeners.values()) {
+            typeListeners.remove(listener);
+        }
+    }
+    
+    public void notifyListeners(Event event) {
+        for (EventListener listener : listeners) {
+            try {
+                listener.onEvent(event);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        
+        List<EventListener> typeListeners = typedListeners.get(event.getType());
+        if (typeListeners != null) {
+            for (EventListener listener : typeListeners) {
+                try {
+                    listener.onEvent(event);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+}
+
+public class LoggingEventListener implements EventListener {
+    private final Logger logger = LoggerFactory.getLogger(LoggingEventListener.class);
+    
+    @Override
+    public void onEvent(Event event) {
+        logger.info("Event received: type={}, data={}, timestamp={}", 
+                   event.getType(), event.getData(), event.getTimestamp());
+    }
+}
+
+public class EmailEventListener implements EventListener {
+    private final EmailService emailService;
+    
+    public EmailEventListener(EmailService emailService) {
+        this.emailService = emailService;
+    }
+    
+    @Override
+    public void onEvent(Event event) {
+        if ("USER_REGISTERED".equals(event.getType())) {
+            User user = (User) event.getData();
+            emailService.sendWelcomeEmail(user.getEmail());
+        }
+    }
+} 

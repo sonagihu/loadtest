@@ -1,0 +1,12 @@
+[기능] Code Explanation (코드 설명)
+[길이] Short (짧은 요청)
+[복잡도] Basic (기본)
+[설명] 간단한 메소드의 동작 설명
+
+다음 메소드가 어떤 동작을 하는지 설명해줘:
+```java
+public static int factorial(int n) {
+    if (n <= 1) return 1;
+    return n * factorial(n - 1);
+}
+``` 

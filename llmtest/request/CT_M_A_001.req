@@ -1,0 +1,79 @@
+[기능] Code Testing (코드 테스트)
+[길이] Medium (중간 요청)
+[복잡도] Advanced (고급)
+[설명] 비동기 작업 큐 시스템의 단위 테스트 작성
+
+다음 비동기 작업 큐 시스템에 대한 단위 테스트를 작성해줘:
+```java
+public class AsyncTaskQueue {
+    private final ExecutorService executor;
+    private final Map<String, Future<?>> runningTasks = new ConcurrentHashMap<>();
+    private final BlockingQueue<Task> taskQueue = new LinkedBlockingQueue<>();
+    private final TaskErrorHandler errorHandler;
+    
+    public AsyncTaskQueue(int threadPoolSize, TaskErrorHandler errorHandler) {
+        this.executor = Executors.newFixedThreadPool(threadPoolSize);
+        this.errorHandler = errorHandler;
+        startTaskProcessor();
+    }
+    
+    private void startTaskProcessor() {
+        executor.submit(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    Task task = taskQueue.take();
+                    Future<?> future = executor.submit(() -> {
+                        try {
+                            task.execute();
+                        } catch (Exception e) {
+                            errorHandler.handleError(task, e);
+                        }
+                    });
+                    runningTasks.put(task.getId(), future);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        });
+    }
+    
+    public void submitTask(Task task) {
+        taskQueue.offer(task);
+    }
+    
+    public void cancelTask(String taskId) {
+        Future<?> future = runningTasks.get(taskId);
+        if (future != null) {
+            future.cancel(true);
+            runningTasks.remove(taskId);
+        }
+    }
+    
+    public void shutdown() {
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+    
+    public boolean isTaskRunning(String taskId) {
+        Future<?> future = runningTasks.get(taskId);
+        return future != null && !future.isDone();
+    }
+}
+
+public interface Task {
+    String getId();
+    void execute() throws Exception;
+}
+
+public interface TaskErrorHandler {
+    void handleError(Task task, Exception e);
+}
+``` 

@@ -1,0 +1,97 @@
+[기능] Bug Fixing (버그 수정)
+[길이] Medium (중간 요청)
+[복잡도] Basic (기본)
+[설명] 사용자 서비스 클래스의 버그 수정
+
+다음 사용자 서비스 클래스의 버그를 찾아 수정해줘:
+```java
+public class UserService {
+    private Map<String, User> users;
+    
+    public UserService() {
+        this.users = new HashMap<>();
+    }
+    
+    public void createUser(String id, String name, String email) {
+        if (users.containsKey(id)) {
+            throw new IllegalArgumentException("이미 존재하는 사용자 ID입니다.");
+        }
+        
+        User user = new User(id, name, email);
+        users.put(id, user);
+    }
+    
+    public User getUser(String id) {
+        return users.get(id);
+    }
+    
+    public void updateUser(String id, String name, String email) {
+        User user = users.get(id);
+        if (user == null) {
+            throw new IllegalArgumentException("존재하지 않는 사용자 ID입니다.");
+        }
+        
+        user.setName(name);
+        user.setEmail(email);
+    }
+    
+    public void deleteUser(String id) {
+        users.remove(id);
+    }
+    
+    public List<User> searchUsers(String keyword) {
+        List<User> results = new ArrayList<>();
+        for (User user : users.values()) {
+            if (user.getName().contains(keyword) || user.getEmail().contains(keyword)) {
+                results.add(user);
+            }
+        }
+        return results;
+    }
+}
+
+public class User {
+    private String id;
+    private String name;
+    private String email;
+    private Date createdAt;
+    private Date updatedAt;
+    
+    public User(String id, String name, String email) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
+    
+    public String getId() {
+        return id;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+        this.updatedAt = new Date();
+    }
+    
+    public String getEmail() {
+        return email;
+    }
+    
+    public void setEmail(String email) {
+        this.email = email;
+        this.updatedAt = new Date();
+    }
+    
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+    
+    public Date getUpdatedAt() {
+        return updatedAt;
+    }
+} 

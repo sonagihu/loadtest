@@ -1,0 +1,134 @@
+기능: Design Pattern (디자인 패턴)
+길이: Long (긴 요청)
+복잡도: Intermediate (중간)
+
+다음 파일 처리 시스템에 적절한 디자인 패턴을 적용하여 개선해주세요:
+
+```java
+public interface FileProcessor {
+    void process(File file) throws IOException;
+}
+
+public class TextFileProcessor implements FileProcessor {
+    @Override
+    public void process(File file) throws IOException {
+        // 텍스트 파일 처리 로직
+        System.out.println("Processing text file: " + file.getName());
+    }
+}
+
+public class ImageFileProcessor implements FileProcessor {
+    @Override
+    public void process(File file) throws IOException {
+        // 이미지 파일 처리 로직
+        System.out.println("Processing image file: " + file.getName());
+    }
+}
+
+public class FileProcessorDecorator implements FileProcessor {
+    protected FileProcessor processor;
+    
+    public FileProcessorDecorator(FileProcessor processor) {
+        this.processor = processor;
+    }
+    
+    @Override
+    public void process(File file) throws IOException {
+        processor.process(file);
+    }
+}
+
+public class CompressionDecorator extends FileProcessorDecorator {
+    public CompressionDecorator(FileProcessor processor) {
+        super(processor);
+    }
+    
+    @Override
+    public void process(File file) throws IOException {
+        System.out.println("Compressing file: " + file.getName());
+        super.process(file);
+        System.out.println("Decompressing file: " + file.getName());
+    }
+}
+
+public class FileProcessorFactory {
+    public static FileProcessor createProcessor(String fileType) {
+        switch (fileType.toLowerCase()) {
+            case "txt":
+                return new TextFileProcessor();
+            case "jpg":
+            case "png":
+                return new ImageFileProcessor();
+            default:
+                throw new IllegalArgumentException("Unsupported file type: " + fileType);
+        }
+    }
+}
+
+public interface ProcessingObserver {
+    void onProcessingStart(File file);
+    void onProcessingComplete(File file);
+    void onProcessingError(File file, Exception e);
+}
+
+public class FileProcessingManager {
+    private List<ProcessingObserver> observers = new ArrayList<>();
+    private FileProcessor processor;
+    
+    public void addObserver(ProcessingObserver observer) {
+        observers.add(observer);
+    }
+    
+    public void removeObserver(ProcessingObserver observer) {
+        observers.remove(observer);
+    }
+    
+    public void setProcessor(FileProcessor processor) {
+        this.processor = processor;
+    }
+    
+    public void processFile(File file) {
+        try {
+            notifyProcessingStart(file);
+            processor.process(file);
+            notifyProcessingComplete(file);
+        } catch (Exception e) {
+            notifyProcessingError(file, e);
+        }
+    }
+    
+    private void notifyProcessingStart(File file) {
+        for (ProcessingObserver observer : observers) {
+            observer.onProcessingStart(file);
+        }
+    }
+    
+    private void notifyProcessingComplete(File file) {
+        for (ProcessingObserver observer : observers) {
+            observer.onProcessingComplete(file);
+        }
+    }
+    
+    private void notifyProcessingError(File file, Exception e) {
+        for (ProcessingObserver observer : observers) {
+            observer.onProcessingError(file, e);
+        }
+    }
+}
+
+public class LoggingObserver implements ProcessingObserver {
+    @Override
+    public void onProcessingStart(File file) {
+        System.out.println("Processing started: " + file.getName());
+    }
+    
+    @Override
+    public void onProcessingComplete(File file) {
+        System.out.println("Processing completed: " + file.getName());
+    }
+    
+    @Override
+    public void onProcessingError(File file, Exception e) {
+        System.err.println("Processing error for " + file.getName() + ": " + e.getMessage());
+    }
+} 

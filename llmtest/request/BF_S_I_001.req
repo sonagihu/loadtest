@@ -1,0 +1,69 @@
+[기능] Bug Fixing (버그 수정)
+[길이] Short (짧은 요청)
+[복잡도] Intermediate (중급)
+[설명] 싱글톤 패턴 데이터베이스 연결 클래스의 버그 수정
+
+다음 싱글톤 패턴 데이터베이스 연결 클래스의 버그를 찾아 수정해줘:
+```java
+public class DatabaseConnection {
+    private static DatabaseConnection instance;
+    private Connection connection;
+    private boolean isConnected;
+    
+    private DatabaseConnection() {
+        this.isConnected = false;
+    }
+    
+    public static DatabaseConnection getInstance() {
+        if (instance == null) {
+            instance = new DatabaseConnection();
+        }
+        return instance;
+    }
+    
+    public void connect() {
+        if (!isConnected) {
+            try {
+                // 데이터베이스 연결 로직
+                connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/mydb", "user", "password");
+                isConnected = true;
+            } catch (SQLException e) {
+                throw new RuntimeException("데이터베이스 연결 실패", e);
+            }
+        }
+    }
+    
+    public void disconnect() {
+        if (isConnected) {
+            try {
+                connection.close();
+                isConnected = false;
+            } catch (SQLException e) {
+                throw new RuntimeException("데이터베이스 연결 해제 실패", e);
+            }
+        }
+    }
+    
+    public boolean isConnected() {
+        return isConnected;
+    }
+    
+    public Connection getConnection() {
+        if (!isConnected) {
+            throw new IllegalStateException("데이터베이스가 연결되어 있지 않습니다.");
+        }
+        return connection;
+    }
+    
+    public void executeQuery(String sql) {
+        if (!isConnected) {
+            throw new IllegalStateException("데이터베이스가 연결되어 있지 않습니다.");
+        }
+        try {
+            Statement stmt = connection.createStatement();
+            stmt.executeQuery(sql);
+        } catch (SQLException e) {
+            throw new RuntimeException("쿼리 실행 실패", e);
+        }
+    }
+} 

@@ -10,6 +10,8 @@ import argparse
 import threading
 from queue import Queue
 import asyncio.subprocess
+from typing import Dict, List
+import re
 
 class LLMResponseHandler:
     def __init__(self, result_dir: Path, summary_file: Path):
@@ -121,80 +123,159 @@ class LLMResponseHandler:
             if test_case_num in self.start_times:
                 del self.start_times[test_case_num]
 
-class LLMTester:
-    def __init__(self, concurrent_users: int, test_cases: int):
+class VLLMTest:
+    def __init__(self, base_url: str, api_key: str, concurrent_users: int, test_cases: int, length: str):
+        self.base_url = base_url
+        self.api_key = api_key
+        self.model = "qwen3"
         self.concurrent_users = concurrent_users
         self.test_cases = test_cases
-        self.base_url = "http://localhost:11434/api/generate"
-        self.request_dir = Path("request")
-        self.response_dir = Path("response")
+        self.length = length.upper()  # S, M, L 중 하나
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.result_dir = self.response_dir / self.timestamp
-        self.summary_file = self.result_dir / "summary.txt"
-        self.response_handler = LLMResponseHandler(self.result_dir, self.summary_file)
+        self.result_dir = Path("response") / self.timestamp
+        self.summary_file = self.result_dir / "summary.csv"
+        self.success_count = 0
+        self.total_count = 0
+        self.total_ttft = 0
+        self.total_tbt = 0
+        self.total_elapsed_time = 0
         
+    def get_test_case_files(self) -> List[str]:
+        """테스트 케이스 파일 목록을 가져오고 길이에 따라 필터링합니다."""
+        request_dir = Path("request")
+        test_files = []
+        
+        # 모든 .req 파일을 가져옴
+        for file in request_dir.glob("*.req"):
+            # 파일명의 3번째 자리 문자로 길이 판단 (예: CT_S_B_001.req -> S)
+            if len(file.name) >= 4:
+                file_length = file.name.split('_')[1].upper()
+                if file_length == self.length:
+                    test_files.append(file.name)
+        
+        return sorted(test_files)
+    
     async def setup(self):
         self.result_dir.mkdir(parents=True, exist_ok=True)
         with open(self.summary_file, "w", encoding="utf-8") as f:
-            f.write("Test Case,Response Code,Start Time,TTFT (ms),Elapsed Time (ms),Total Res Tokens,Avg TBT (ms)\n")
+            f.write("Test Case,Response Code,Start Time,TTFT(ms),TBT(ms),Elapsed Time(ms),Total Res Tokens\n")
     
-    async def process_test_case(self, test_case_num: int):
-        test_case_file = f"tc{test_case_num:03d}.req"
-        test_case_path = self.request_dir / test_case_file
+    async def process_test_case(self, test_case_file: str):
+        test_case_path = Path("request") / test_case_file
         
         if not test_case_path.exists():
-            print(f"Warning: Test case file {test_case_file} not found")
+            print(f"테스트 케이스 파일이 존재하지 않습니다: {test_case_file}")
             return
         
         with open(test_case_path, "r", encoding="utf-8") as f:
-            request_data = f.read()
+            request_data = f.read().strip()
         
         start_time = time.time()
-        self.response_handler.start_handling(test_case_num, start_time)
+        result = await self.generate(request_data)
+        end_time = time.time()
         
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    self.base_url,
-                    json={
-                        "model": "qwen2.5:7b",
-                        "prompt": request_data,
-                        "stream": True
-                    }
-                ) as response:
-                    async for line in response.content:
-                        if line:
-                            try:
-                                response_data = json.loads(line)
-                                self.response_handler.add_response(test_case_num, response_data)
-                            except json.JSONDecodeError:
-                                continue
-                            
-            self.response_handler.finish_handling(test_case_num)
-            print(f"Processed {test_case_file}")
-            
-        except Exception as e:
-            print(f"Error processing {test_case_file}: {str(e)}")
-            with open(self.summary_file, "a", encoding="utf-8") as f:
-                f.write(f"{test_case_file},ERROR,{str(e)}\n")
-            self.response_handler.finish_handling(test_case_num)
+        # 테스트 케이스 번호 추출 (CT_S_B_001.req -> 1)
+        test_case_num = int(test_case_file.split('_')[-1].split('.')[0])
+        
+        # 응답 저장
+        response_file = self.result_dir / test_case_file.replace('.req', '.res')
+        with open(response_file, "w", encoding="utf-8") as f:
+            f.write(result["response"])
+        
+        # 시간 측정 및 통계 업데이트
+        elapsed_time = (end_time - start_time) * 1000  # ms 단위로 변환
+        self.total_count += 1
+        if result["response"]:
+            self.success_count += 1
+            self.total_elapsed_time += elapsed_time
+            self.total_ttft += result.get("ttft", elapsed_time)
+            self.total_tbt += result.get("tbt", 0)
+        
+        # 요약 정보 기록
+        start_time_str = datetime.fromtimestamp(start_time).strftime('%H%M%S.%f')[:-4]
+        with open(self.summary_file, "a", encoding="utf-8") as f:
+            f.write(f"{test_case_file},200,{start_time_str},{result.get('ttft', elapsed_time):.2f},{result.get('tbt', 0):.2f},{elapsed_time:.2f},{len(result['response'])}\n")
+        
+        print(f"테스트 케이스 {test_case_file} 응답: {result['response'][:100]}...")
     
     async def run_test(self):
         await self.setup()
-        test_cases = range(1, self.test_cases + 1)
         
-        for i in range(0, len(test_cases), self.concurrent_users):
-            group = test_cases[i:i + self.concurrent_users]
-            tasks = [self.process_test_case(num) for num in group]
-            await asyncio.gather(*tasks)
+        # 선택된 길이에 해당하는 테스트 케이스 파일 목록 가져오기
+        test_files = self.get_test_case_files()
+        if not test_files:
+            print(f"선택한 길이({self.length})에 해당하는 테스트 케이스가 없습니다.")
+            return
+        
+        # 테스트 케이스 수만큼만 선택
+        test_files = test_files[:self.test_cases]
+        
+        async def user_task(user_id: int):
+            print(f"사용자 {user_id} 시작")
+            for test_file in test_files:
+                await self.process_test_case(test_file)
+            print(f"사용자 {user_id} 완료")
+        
+        # 각 사용자(스레드)가 모든 테스트 케이스를 실행
+        tasks = [user_task(user_id) for user_id in range(1, self.concurrent_users + 1)]
+        await asyncio.gather(*tasks)
+        
+        # 최종 요약 정보 출력
+        avg_ttft = self.total_ttft / self.success_count if self.success_count > 0 else 0
+        avg_tbt = self.total_tbt / self.success_count if self.success_count > 0 else 0
+        avg_elapsed_time = self.total_elapsed_time / self.success_count if self.success_count > 0 else 0
+        
+        with open(self.summary_file, "a", encoding="utf-8") as f:
+            f.write(f"\n정상건수/전체건수: {self.success_count}/{self.total_count}\n")
+            f.write(f"평균 TTFT: {avg_ttft:.2f}ms\n")
+            f.write(f"평균 TBT: {avg_tbt:.2f}ms\n")
+            f.write(f"평균 Elapsed Time: {avg_elapsed_time:.2f}ms\n")
+        
+        print("\n테스트 완료")
+        print(f"정상건수/전체건수: {self.success_count}/{self.total_count}")
+        print(f"평균 TTFT: {avg_ttft:.2f}ms")
+        print(f"평균 TBT: {avg_tbt:.2f}ms")
+        print(f"평균 Elapsed Time: {avg_elapsed_time:.2f}ms")
+
+    async def generate(self, prompt: str) -> Dict:
+        start_time = time.time()
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{self.base_url}/chat/completions",
+                json={
+                    "model": self.model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 2048,
+                    "temperature": 0.7,
+                    "top_p": 0.95,
+                    "stream": False
+                },
+                headers={"Authorization": f"Bearer {self.api_key}"}
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    end_time = time.time()
+                    return {
+                        "response": data["choices"][0]["message"]["content"],
+                        "ttft": (end_time - start_time) * 1000,  # ms 단위로 변환
+                        "tbt": (end_time - start_time) * 1000 / len(data["choices"][0]["message"]["content"].split()) if data["choices"][0]["message"]["content"] else 0
+                    }
+                else:
+                    return {"response": "", "ttft": 0, "tbt": 0}
 
 async def main():
     parser = argparse.ArgumentParser(description="LLM Load Testing Tool")
-    parser.add_argument("concurrent_users", type=int, help="Number of concurrent users")
-    parser.add_argument("test_cases", type=int, help="Number of test cases to run")
-    
+    parser.add_argument("--user", type=int, default=1, help="동시 사용자 수")
+    parser.add_argument("--tc", type=int, default=1, help="테스트 시나리오 수")
+    parser.add_argument("--len", type=str, default="M", choices=["S", "M", "L"], help="테스트 케이스 길이 (S: Short, M: Medium, L: Long)")
     args = parser.parse_args()
-    tester = LLMTester(args.concurrent_users, args.test_cases)
+    
+    base_url = "https://i1el6rswlamycy-8002.proxy.runpod.net/v1"
+    api_key = "test"
+    concurrent_users = args.user
+    test_cases = args.tc
+    length = args.len
+    tester = VLLMTest(base_url, api_key, concurrent_users, test_cases, length)
     await tester.run_test()
 
 if __name__ == "__main__":
